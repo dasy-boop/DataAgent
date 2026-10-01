@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>DataAgent 数据分析</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        input {
+            width: 260px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 24px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #f3f4f6;
+        }
+
+        #message {
+            margin-top: 16px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>DataAgent 数据分析</h1>
+
+    <p>输入岗位关键词，查看技能需求排名。</p>
+
+    <input id="keyword" value="Data Analyst">
+    <button id="analyzeButton">开始分析</button>
+
+    <div id="message"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>技能</th>
+                <th>岗位记录数</th>
+                <th>占有效记录比例</th>
+            </tr>
+        </thead>
+        <tbody id="skillTableBody"></tbody>
+    </table>
+
+    <script src="/app.js"></script>
+</body>
+</html>

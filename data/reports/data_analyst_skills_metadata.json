@@ -1,0 +1,9 @@
+{
+  "source_file": "nextgig_jobs_2026-06.parquet",
+  "filter": "title contains 'data analyst', case-insensitive",
+  "matched_records": 166,
+  "valid_skill_records": 137,
+  "counting_rule": "Each normalized skill counted once per record",
+  "denominator": "Matched records with skills_parse_status == 'ok'",
+  "job_records_deduplicated": false
+}
