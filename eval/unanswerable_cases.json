@@ -1,0 +1,20 @@
+[
+  {
+    "id": "missing_interview_data",
+    "question": "根据求职者的面试评价，判断哪家公司面试最难。",
+    "expected_status": "cannot_answer",
+    "expected_reason_code": "missing_data"
+  },
+  {
+    "id": "unsupported_salary_forecast",
+    "question": "预测明年数据分析师岗位的平均薪资。",
+    "expected_status": "cannot_answer",
+    "expected_reason_code": "unsupported_operation"
+  },
+  {
+    "id": "ambiguous_analysis_request",
+    "question": "帮我分析一下。",
+    "expected_status": "needs_clarification",
+    "expected_reason_code": "ambiguous_request"
+  }
+]

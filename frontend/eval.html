@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DataAgent 自动评测</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f7f9fc;
+      color: #243247;
+      font-family: "Microsoft YaHei", sans-serif;
+      line-height: 1.65;
+    }
+    main {
+      max-width: 1200px;
+      margin: 32px auto;
+      padding: 0 20px 48px;
+    }
+    a { color: #2563eb; }
+    h1 { margin-bottom: 12px; }
+    .card {
+      margin-top: 24px;
+      padding: 24px;
+      background: white;
+      border: 1px solid #dce3ed;
+      border-radius: 10px;
+    }
+    input { max-width: 100%; }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .metric {
+      padding: 16px;
+      border-radius: 8px;
+      background: #f0f5fc;
+    }
+    .metric strong { display: block; font-size: 24px; }
+    .muted { color: #64748b; }
+    .pass { color: #15803d; font-weight: bold; }
+    .fail { color: #b91c1c; font-weight: bold; }
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #dce3ed;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f0f5fc; white-space: nowrap; }
+    td:first-child { min-width: 240px; }
+    details {
+      margin-top: 12px;
+      padding: 14px;
+      border: 1px solid #dce3ed;
+      border-radius: 8px;
+    }
+    summary { cursor: pointer; overflow-wrap: anywhere; }
+    pre {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      padding: 14px;
+      background: #f3f6fa;
+      border-radius: 6px;
+    }
+    #notice { overflow-wrap: anywhere; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+<main>
+  <a href="/agent.html">返回智能分析</a>
+  <h1>DataAgent 自动评测</h1>
+  <p>选择已生成的 JSON 报告，查看每道题的评测结果。</p>
+
+  <section class="card">
+    <label for="reportFile">选择报告文件：</label>
+    <input id="reportFile" type="file" accept=".json,application/json">
+    <p class="muted">报告目录：D:\DataAgent\eval\reports</p>
+    <p id="notice" role="status"></p>
+  </section>
+
+  <section id="overview" class="card" hidden></section>
+  <section id="results" class="card" hidden></section>
+  <section id="details" class="card" hidden></section>
+</main>
+
+<script>
+"use strict";
+
+const fileInput = document.getElementById("reportFile");
+const notice = document.getElementById("notice");
+const overview = document.getElementById("overview");
+const resultsBox = document.getElementById("results");
+const detailsBox = document.getElementById("details");
+
+const statusNames = {
+  ready: "可以分析",
+  completed: "分析完成",
+  cannot_answer: "无法回答",
+  needs_clarification: "需要补充信息"
+};
+
+const reasonNames = {
+  missing_data: "缺少数据",
+  unsupported_operation: "不支持的操作",
+  ambiguous_request: "问题不明确"
+};
+
+function element(tag, text, className) {
+  const node = document.createElement(tag);
+  if (text !== undefined) node.textContent = String(text);
+  if (className) node.className = className;
+  return node;
+}
+
+function isObject(value) {
+  return value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value);
+}
+
+function translated(value, mapping) {
+  return mapping[value] || value || "未提供";
+}
+
+function verdict(value) {
+  if (value === true) return element("span", "通过", "pass");
+  if (value === false) return element("span", "未通过", "fail");
+  return element("span", "未评测", "muted");
+}
+
+function rate(value) {
+  return typeof value === "number" &&
+    Number.isFinite(value) &&
+    value >= 0 && value <= 1
+      ? (value * 100).toFixed(1) + "%"
+      : "未提供";
+}
+
+function metric(container, label, value) {
+  const card = element("div", undefined, "metric");
+  card.append(element("div", label), element("strong", value));
+  container.append(card);
+}
+
+function addJson(container, label, value) {
+  if (value === undefined) return;
+  container.append(
+    element("h3", label),
+    element("pre", JSON.stringify(value, null, 2))
+  );
+}
+
+function addText(container, label, value) {
+  container.append(element("p", label + "：" + value));
+}
+
+function renderReport(report, filename) {
+  if (!isObject(report) || !Array.isArray(report.results)) {
+    throw new Error("报告格式不正确：需要包含 results 数组。");
+  }
+  if (!report.results.every(isObject)) {
+    throw new Error("报告格式不正确：每道题的结果必须是对象。");
+  }
+
+  const rows = report.results;
+  const answerability = report.mode === "answerability";
+  const executionOnly = report.mode === "execution_only";
+  const endToEnd = report.mode === "end_to_end";
+
+  const modeName = answerability
+    ? "拒答与澄清评测"
+    : executionOnly
+      ? "固定计划计算校验（未评测模型）"
+      : endToEnd
+        ? "完整评测（计划与计算结果）"
+        : "旧版或其他评测";
+
+  const passed = rows.filter(row => row.passed === true).length;
+  const metrics = element("div", undefined, "metrics");
+
+  overview.append(element("h2", "评测概况"));
+  addText(overview, "报告文件", filename);
+  addText(overview, "评测模式", modeName);
+  if (report.created_at) {
+    addText(overview, "生成时间", report.created_at);
+  }
+
+  metric(metrics, "通过题数", passed + " / " + rows.length);
+  metric(metrics, "通过率", rows.length
+    ? (passed / rows.length * 100).toFixed(1) + "%"
+    : "无题目");
+
+  if (!answerability) {
+    metric(metrics, "计划匹配率",
+      executionOnly ? "未评测模型" : rate(report.plan_accuracy));
+    metric(metrics, "执行成功率", rate(report.execution_success_rate));
+    metric(metrics, "结果正确率", rate(report.result_accuracy));
+  }
+
+  overview.append(metrics);
+  if (answerability) {
+    overview.append(element(
+      "p",
+      "本模式检查回答状态、原因、中文说明及未调用工具等条件。正确拒答或请求澄清属于通过；中文说明的具体含义仍需人工检查。",
+      "muted"
+    ));
+  }
+  overview.append(element(
+    "p",
+    "以上指标仅反映本次评测题目，不代表所有问题的准确率。",
+    "muted"
+  ));
+
+  resultsBox.append(element("h2", "逐题结果"));
+  const wrap = element("div", undefined, "table-wrap");
+  const table = element("table");
+  const header = element("tr");
+  const headings = answerability
+    ? ["问题", "预期状态", "实际状态", "实际原因", "总体结果"]
+    : ["问题", "计划匹配", "执行成功", "结果正确", "总体结果", "耗时"];
+
+  headings.forEach(label => header.append(element("th", label)));
+  const thead = element("thead");
+  thead.append(header);
+  const tbody = element("tbody");
+
+  rows.forEach((row, index) => {
+    const tr = element("tr");
+    tr.append(element("td", row.question || row.id || "题目 " + (index + 1)));
+
+    if (answerability) {
+      const actual = isObject(row.actual_response)
+        ? row.actual_response : {};
+      tr.append(
+        element("td", translated(row.expected_status, statusNames)),
+        element("td", translated(actual.status, statusNames)),
+        element("td", translated(actual.reason_code, reasonNames))
+      );
+    } else {
+      for (const key of [
+        "plan_passed", "execution_succeeded", "result_passed"
+      ]) {
+        const td = element("td");
+        td.append(verdict(row[key]));
+        tr.append(td);
+      }
+    }
+
+    const outcome = element("td");
+    outcome.append(verdict(row.passed));
+    tr.append(outcome);
+
+    if (!answerability) {
+      const elapsed = row.elapsed_seconds;
+      tr.append(element("td",
+        typeof elapsed === "number" && Number.isFinite(elapsed)
+          ? elapsed.toFixed(2) + " 秒"
+          : "未提供"
+      ));
+    }
+
+    tbody.append(tr);
+    renderDetails(row, index, answerability);
+  });
+
+  table.append(thead, tbody);
+  wrap.append(table);
+  resultsBox.append(wrap);
+
+  overview.hidden = false;
+  resultsBox.hidden = false;
+  detailsBox.hidden = false;
+}
+
+function renderDetails(row, index, answerability) {
+  const block = element("details");
+  const label = (index + 1) + ". " +
+    (row.question || row.id || "未命名题目");
+  block.append(element("summary", label));
+
+  if (row.error) {
+    block.append(element("p", "错误：" + row.error, "fail"));
+  }
+
+  if (answerability) {
+    const actual = isObject(row.actual_response)
+      ? row.actual_response : {};
+    addText(block, "预期状态",
+      translated(row.expected_status, statusNames));
+    addText(block, "预期原因",
+      translated(row.expected_reason_code, reasonNames));
+    addText(block, "实际状态",
+      translated(actual.status, statusNames));
+    addText(block, "实际原因",
+      translated(actual.reason_code, reasonNames));
+    addText(block, "中文说明", actual.message || "未提供");
+
+    if (isObject(row.checks)) {
+      block.append(element("h3", "检查项目"));
+      const list = element("ul");
+      Object.entries(row.checks).forEach(([name, value]) => {
+        const item = element("li", name + "：");
+        item.append(verdict(value));
+        list.append(item);
+      });
+      block.append(list);
+    }
+
+    addJson(block, "接口完整返回", row.actual_response);
+  } else {
+    addJson(block, "预期工具调用", row.expected_calls);
+    addJson(block, "实际分析计划", row.actual_plan);
+    addJson(block, "预期结果", row.expected_result);
+    if (row.actual_row_count !== undefined) {
+      addText(block, "实际结果行数", row.actual_row_count);
+    }
+    addJson(block, "实际结果预览", row.actual_preview);
+  }
+
+  addJson(block, "本题原始评测记录", row);
+  detailsBox.append(block);
+}
+
+let loadVersion = 0;
+
+fileInput.addEventListener("change", async () => {
+  const version = ++loadVersion;
+  for (const box of [overview, resultsBox, detailsBox]) {
+    box.replaceChildren();
+    box.hidden = true;
+  }
+  notice.textContent = "";
+  notice.className = "";
+
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    if (version !== loadVersion) return;
+    const report = JSON.parse(text.replace(/^\uFEFF/, ""));
+    detailsBox.append(element("h2", "查看详细记录"));
+    renderReport(report, file.name);
+    notice.textContent = "报告加载成功。";
+    notice.className = "pass";
+  } catch (error) {
+    if (version !== loadVersion) return;
+    for (const box of [overview, resultsBox, detailsBox]) {
+      box.replaceChildren();
+      box.hidden = true;
+    }
+    notice.textContent = "加载失败：" + error.message;
+    notice.className = "fail";
+  }
+});
+</script>
+</body>
+</html>

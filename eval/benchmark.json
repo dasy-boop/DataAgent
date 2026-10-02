@@ -1,0 +1,150 @@
+{
+  "version": 2,
+  "dataset": {
+    "path": "data/raw/nextgig_jobs_2026-06.parquet",
+    "sha256": "b80c4d541eec3649c5b8d0143a11ddbc9a60691e1c27f6d574b501d4c9ff3f14",
+    "rows": 112816
+  },
+  "baseline_note": "从原始数据独立遍历计数，固定美国与英国已知别名规则。筛选明细核对行数及岗位名称、清洗国家的无序多重集摘要。",
+  "cases": [
+    {
+      "id": "country_top5",
+      "question": "统计合并已知国家别名后，岗位记录最多的前五个国家。",
+      "expected_calls": [
+        {
+          "name": "count_values",
+          "arguments": {
+            "column": "country_clean",
+            "top_n": 5
+          }
+        }
+      ],
+      "expected_result": {
+        "kind": "counts",
+        "column": "country_clean",
+        "row_count": 5,
+        "cutoff": 2107,
+        "candidates": {
+          "United States": 74090,
+          "United Kingdom": 5699,
+          "Canada": 4923,
+          "India": 4209,
+          "France": 2107
+        }
+      }
+    },
+    {
+      "id": "company_top10",
+      "question": "统计岗位记录最多的前十家公司。",
+      "expected_calls": [
+        {
+          "name": "count_values",
+          "arguments": {
+            "column": "company_name",
+            "top_n": 10
+          }
+        }
+      ],
+      "expected_result": {
+        "kind": "counts",
+        "column": "company_name",
+        "row_count": 10,
+        "cutoff": 593,
+        "candidates": {
+          "Greene King": 2425,
+          "Domino’s Pizza": 2318,
+          "Allied Universal": 1969,
+          "CVS Health": 1320,
+          "Accenture": 1280,
+          "Marriott Hotels & Resorts": 803,
+          "Walmart": 780,
+          "Alimentation Couche-Tard": 658,
+          "Lowe's": 631,
+          "Albertsons": 593
+        }
+      }
+    },
+    {
+      "id": "data_analyst_jobs",
+      "question": "筛选岗位名称中包含数据分析师的记录。",
+      "expected_calls": [
+        {
+          "name": "filter_rows",
+          "arguments": {
+            "column": "title",
+            "keyword": "Data Analyst"
+          }
+        }
+      ],
+      "expected_result": {
+        "kind": "projection",
+        "columns": [
+          "title",
+          "country_clean"
+        ],
+        "row_count": 166,
+        "sha256": "98decf272a089b59b5e0349047b3d83ce1905a861a6ad97f9e14933a372016bb"
+      }
+    },
+    {
+      "id": "analyst_country_top5",
+      "question": "筛选数据分析师岗位，再统计合并已知国家别名后岗位记录最多的前五个国家。",
+      "expected_calls": [
+        {
+          "name": "filter_rows",
+          "arguments": {
+            "column": "title",
+            "keyword": "Data Analyst"
+          }
+        },
+        {
+          "name": "count_values",
+          "arguments": {
+            "column": "country_clean",
+            "top_n": 5
+          }
+        }
+      ],
+      "expected_result": {
+        "kind": "counts",
+        "column": "country_clean",
+        "row_count": 5,
+        "cutoff": 5,
+        "candidates": {
+          "United States": 81,
+          "India": 14,
+          "United Kingdom": 13,
+          "France": 6,
+          "Germany": 5
+        }
+      }
+    },
+    {
+      "id": "no_matching_jobs",
+      "question": "筛选岗位名称包含原文关键词“评测专用不存在岗位987654321”的记录，再统计合并已知国家别名后岗位记录最多的前五个国家。",
+      "expected_calls": [
+        {
+          "name": "filter_rows",
+          "arguments": {
+            "column": "title",
+            "keyword": "评测专用不存在岗位987654321"
+          }
+        },
+        {
+          "name": "count_values",
+          "arguments": {
+            "column": "country_clean",
+            "top_n": 5
+          }
+        }
+      ],
+      "expected_result": {
+        "kind": "counts",
+        "column": "country_clean",
+        "row_count": 0,
+        "cutoff": 0,
+        "candidates": {}
+      }
+    }
+  ]
+}
