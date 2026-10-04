@@ -71,4 +71,27 @@ def summarize_numeric(
         "min": float(values.min()),
         "max": float(values.max()),
     }
+from backend.skill_cleaning import normalize_skills, parse_skills
+from backend.skill_analysis import summarize_skills
 
+
+def count_skills(df: pd.DataFrame, top_n: int = 10) -> dict:
+    """统计当前岗位范围内的技能出现次数。"""
+    if "skills_required" not in df.columns:
+        raise ToolError("字段不存在: skills_required")
+    if isinstance(top_n, bool) or not isinstance(top_n, int) or not 1 <= top_n <= 50:
+        raise ToolError("top_n 必须是 1 到 50 之间的整数")
+
+    jobs = df[["skills_required"]].copy()
+    parsed = jobs["skills_required"].apply(parse_skills)
+    jobs["skills_parse_status"] = parsed.apply(lambda item: item[1])
+    jobs["skills_normalized"] = parsed.apply(
+        lambda item: normalize_skills(item[0])
+    )
+
+    ranking, valid_count = summarize_skills(jobs, top_n=top_n)
+    return {
+        "matched_records": len(jobs),
+        "valid_skill_records": int(valid_count),
+        "skills": ranking.reset_index().to_dict(orient="records"),
+    }

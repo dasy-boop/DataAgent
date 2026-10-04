@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from .pandas_tools import count_values, filter_rows, summarize_numeric
+from .pandas_tools import count_skills, count_values, filter_rows, summarize_numeric
 
 
 @dataclass(frozen=True)
@@ -21,6 +21,11 @@ TOOL_REGISTRY = {
         name="count_values",
         description="统计字段值的出现次数",
         func=count_values,
+    ),
+    "count_skills": ToolSpec(
+        name="count_skills",
+        description="统计当前岗位范围内各项技能的出现次数",
+        func=count_skills,
     ),
     "summarize_numeric": ToolSpec(
         name="summarize_numeric",

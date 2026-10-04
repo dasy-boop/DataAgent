@@ -14,6 +14,7 @@ def _validate_arguments(
     allowed_arguments = {
         "filter_rows": {"column", "keyword"},
         "count_values": {"column", "top_n"},
+        "count_skills": {"top_n"},
         "summarize_numeric": {"column"},
     }
 
@@ -26,6 +27,10 @@ def _validate_arguments(
         raise ToolError(
             f"工具 {name} 不支持参数: {', '.join(extra)}"
         )
+
+    # The skill tool has a fixed source field and validates top_n itself.
+    if name == "count_skills":
+        return
 
     column = arguments.get("column")
     if not isinstance(column, str) or not column.strip():

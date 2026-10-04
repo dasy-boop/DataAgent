@@ -170,6 +170,31 @@ def create_agent_plan(request: PlanRequest):
             },
         },
         {
+            "name": "count_skills",
+            "description": (
+                "在当前筛选的岗位记录中，解析 skills_required 中的技能列表，"
+                "统计每项技能出现于多少条岗位记录。"
+                "同一岗位重复提及同一技能只计一次，忽略无法解析技能的记录。"
+                "返回匹配岗位数、技能可解析岗位数和技能排名。"
+                "用于技能排名，以及 SQL 与 Python 等具体技能的频次比较。"
+                "只接受可选的 top_n 参数，不需要 column。"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "top_n": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 50,
+                        "default": 10,
+                        "description": "返回频次最高的前几个技能",
+                    },
+                },
+                "required": [],
+                "additionalProperties": False,
+            },
+        },
+        {
             "name": "summarize_numeric",
             "description": (
                 "统计数值字段的有效数量、平均值、中位数、"
