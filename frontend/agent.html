@@ -35,6 +35,9 @@
     .assistant-mark svg{width:100%;height:100%;overflow:visible}.robot-eyes{transform-box:fill-box;transform-origin:center;animation:robot-blink 6s infinite}
     @keyframes robot-blink{0%,43%,47%,100%{transform:scaleY(1)}45%{transform:scaleY(.12)}}
     @media(prefers-reduced-motion:reduce){.robot-eyes{animation:none}}
+    .turn-answer .answer-line{margin:0 0 10px}
+    .turn-answer .answer-list-item{padding-left:1.25em;text-indent:-1.25em}
+    .turn-answer strong{font-weight:700;color:#1b4632}
   </style>
 </head>
 <body>
@@ -126,7 +129,7 @@
     function createTurn(question){
       const userRow=make("div","chat-user-row"),bubble=make("div","chat-user-bubble",question);userRow.append(bubble);
       const assistantRow=make("article","chat-assistant-row"),mark=createAssistantAvatar(),content=make("div","assistant-content");
-      const message=make("p","turn-message turn-thinking","正在生成计划并分析，请稍候…"),answer=make("p","turn-answer");answer.hidden=true;
+      const message=make("p","turn-message turn-thinking","正在生成计划并分析，请稍候…"),answer=make("div","turn-answer");answer.hidden=true;
       const chart=make("section","turn-chart");chart.hidden=true;chart.setAttribute("aria-label","岗位记录数条形图");
       const exportButton=make("button","turn-export","导出 CSV");exportButton.type="button";exportButton.hidden=true;exportButton.disabled=true;
       const result=make("div","turn-result");const planDetails=make("details","turn-plan"),summary=make("summary","","查看分析计划"),plan=make("pre");planDetails.append(summary,plan);planDetails.hidden=true;
@@ -183,13 +186,31 @@
       }
       ui.evidence.hidden=false;
     }
+    function renderAnswerText(container,value){
+      container.replaceChildren();
+      const lines=String(value).split(/\r?\n/);
+      for(const raw of lines){
+        const line=raw.trim();
+        if(!line)continue;
+        const bullet=/^[-*]\s+/.test(line);
+        const row=make("p","answer-line"+(bullet?" answer-list-item":""));
+        const content=bullet?"• "+line.replace(/^[-*]\s+/,""):line;
+        const parts=content.split(/(\*\*[^*\n]+\*\*)/g);
+        for(const part of parts){
+          if(part.startsWith("**")&&part.endsWith("**"))row.append(make("strong","",part.slice(2,-2)));
+          else row.append(document.createTextNode(part));
+        }
+        container.append(row);
+      }
+      if(!container.childNodes.length)container.textContent=String(value);
+    }
     function showResult(data,ui){
       ui.message.classList.remove("turn-thinking");
       if(data.status==="cannot_answer"||data.status==="needs_clarification"){
         ui.message.textContent=data.status==="needs_clarification"?"需要补充信息":"当前数据或工具的限制";ui.answer.textContent=data.message;ui.answer.hidden=false;return;
       }
       ui.message.textContent=data.historyPreview?"历史分析 · 数据为当时的查询结果":"分析完成";
-      ui.answer.textContent=data.answer||"查询已完成，请查看数据依据。";ui.answer.hidden=false;
+      renderAnswerText(ui.answer,data.answer||"查询已完成，请查看数据依据。");ui.answer.hidden=false;
       showEvidence(data,ui);
       if(data.plan)renderPlan(data.plan,ui);
       const last=(data.steps||[]).at(-1);
