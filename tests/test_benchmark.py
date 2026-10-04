@@ -100,3 +100,26 @@ def test_correct_plan_with_wrong_answer_fails(monkeypatch, expected):
     assert result['execution_succeeded']
     assert not result['result_passed']
     assert not result['passed']
+
+
+def test_skill_result_checks_independent_counts_and_rejects_duplicates():
+    expected = {'kind': 'skill_counts', 'matched_records': 3,
+                'valid_skill_records': 2, 'candidates': {'sql': 2, 'python': 1}}
+    actual = {'matched_records': 3, 'valid_skill_records': 2,
+              'skills': [{'skill': 'sql', '岗位记录数': 2},
+                         {'skill': 'python', '岗位记录数': 1}]}
+    assert runner.check_result(actual, expected)[0]
+    assert not runner.check_result({**actual, 'valid_skill_records': 3}, expected)[0]
+    assert not runner.check_result({**actual, 'skills': [actual['skills'][0]] * 2}, expected)[0]
+    assert not runner.check_result({**actual, 'skills': [
+        actual['skills'][0], {'skill': 'python', '岗位记录数': 2}]}, expected)[0]
+
+
+def test_skill_plan_accepts_enough_top_n_but_rejects_too_small_or_extra_arguments():
+    expected = [{'name': 'filter_rows', 'arguments': {'column': 'title', 'keyword': 'Data Analyst'}},
+                {'name': 'count_skills', 'arguments': {'top_n': 10}}]
+    assert runner.match_calls(expected, expected)
+    assert runner.match_calls([expected[0], {'name': 'count_skills', 'arguments': {}}], expected)
+    assert runner.match_calls([expected[0], {'name': 'count_skills', 'arguments': {'top_n': 50}}], expected)
+    assert not runner.match_calls([expected[0], {'name': 'count_skills', 'arguments': {'top_n': 1}}], expected)
+    assert not runner.match_calls([expected[0], {'name': 'count_skills', 'arguments': {'column': 'skills_required'}}], expected)

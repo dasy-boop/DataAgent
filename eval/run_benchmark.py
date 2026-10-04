@@ -47,12 +47,41 @@ def match_calls(actual, expected):
             for values in (args, target):
                 if isinstance(values.get('keyword'), str):
                     values['keyword'] = values['keyword'].strip().lower()
+        if want['name'] == 'count_skills':
+            # Both compared skills are in the top two; a larger valid limit is equivalent.
+            top_n = args.get('top_n', 10)
+            if set(args) - {'top_n'} or type(top_n) is not int or not 2 <= top_n <= 50:
+                return False
+            continue
         if args != target:
             return False
     return True
 
 
 def check_result(actual, expected):
+    if expected['kind'] == 'skill_counts':
+        if not isinstance(actual, dict):
+            return False, '技能统计结果不是对象'
+        for key in ('matched_records', 'valid_skill_records'):
+            if type(actual.get(key)) is not int or actual[key] != expected[key]:
+                return False, f'{key} 与独立计算的标准答案不符'
+        rows = actual.get('skills')
+        if not isinstance(rows, list):
+            return False, '技能排名不是列表'
+        seen = set()
+        for row in rows:
+            if not isinstance(row, dict) or not isinstance(row.get('skill'), str):
+                return False, '技能排名缺少技能名称'
+            skill = row['skill']
+            count = row.get('岗位记录数')
+            if skill in seen or type(count) is not int or count < 0:
+                return False, f'技能重复或计数无效：{skill}'
+            seen.add(skill)
+        found = {row['skill']: row['岗位记录数'] for row in rows}
+        for skill, count in expected['candidates'].items():
+            if found.get(skill) != count:
+                return False, f'{skill} 岗位记录数不符：预期 {count}，实际 {found.get(skill)}'
+        return True, '匹配数、可解析数及目标技能频次正确'
     if not isinstance(actual, list):
         return False, '最终结果不是记录列表'
     if len(actual) != expected['row_count']:
@@ -116,7 +145,9 @@ def evaluate_case(case, base_url, execution_only=False):
         result['actual_preview'] = [
             {c: row.get(c) for c in columns if c is not None} if isinstance(row, dict) else row
             for row in actual[:10]
-        ] if isinstance(actual, list) else actual
+        ] if isinstance(actual, list) else (
+            {**actual, 'skills': actual.get('skills', [])[:10]} if isinstance(actual, dict) else actual
+        )
         result['passed'] = result['result_passed'] and (execution_only or result['plan_passed'])
     except HTTPError as exc:
         result['error'] = f'HTTP {exc.code}: ' + exc.read().decode('utf-8', errors='replace')[:2000]

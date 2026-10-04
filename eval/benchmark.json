@@ -5,7 +5,7 @@
     "sha256": "b80c4d541eec3649c5b8d0143a11ddbc9a60691e1c27f6d574b501d4c9ff3f14",
     "rows": 112816
   },
-  "baseline_note": "从原始数据独立遍历计数，固定美国与英国已知别名规则。筛选明细核对行数及岗位名称、清洗国家的无序多重集摘要。",
+  "baseline_note": "从原始数据独立遍历计数，固定美国与英国已知别名规则。筛选明细核对行数及岗位名称、清洗国家的无序多重集摘要。技能题独立解析 JSON 列表、单条岗位去重后计数。",
   "cases": [
     {
       "id": "country_top5",
@@ -117,6 +117,26 @@
           "France": 6,
           "Germany": 5
         }
+      }
+    },
+    {
+      "id": "analyst_sql_vs_python",
+      "question": "Data Analyst 岗位中 SQL 和 Python 哪个技能更常见？请给出各自涉及的岗位记录数。",
+      "expected_calls": [
+        {
+          "name": "filter_rows",
+          "arguments": {"column": "title", "keyword": "Data Analyst"}
+        },
+        {
+          "name": "count_skills",
+          "arguments": {"top_n": 10}
+        }
+      ],
+      "expected_result": {
+        "kind": "skill_counts",
+        "matched_records": 166,
+        "valid_skill_records": 137,
+        "candidates": {"sql": 104, "python": 59}
       }
     },
     {
