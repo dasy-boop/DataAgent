@@ -5,6 +5,10 @@ class ToolError(ValueError):
     """工具参数错误。"""
 
 
+class NoNumericDataError(ToolError):
+    """字段存在，但本次筛选范围没有可用于统计的数值。"""
+
+
 def filter_rows(
     df: pd.DataFrame,
     column: str,
@@ -57,7 +61,7 @@ def summarize_numeric(
     values = pd.to_numeric(df[column], errors="coerce").dropna()
 
     if values.empty:
-        raise ToolError(f"字段没有可用数值: {column}")
+        raise NoNumericDataError(f"字段没有可用数值: {column}")
 
     return {
         "column": column,

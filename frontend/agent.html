@@ -3,419 +3,242 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DataAgent 智能分析</title>
+  <title>DataAgent｜智能招聘数据分析</title>
   <style>
-    body {
-      font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
-      max-width: 960px;
-      margin: 48px auto;
-      padding: 0 20px;
-      color: #243247;
-    }
-    textarea {
-      box-sizing: border-box;
-      width: 100%;
-      min-height: 100px;
-      padding: 12px;
-      font-size: 16px;
-    }
-    button {
-      margin-top: 12px;
-      padding: 10px 24px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    button:disabled { cursor: wait; }
-    #exportButton { margin: 0 0 12px; }
-    #message { margin: 20px 0; }
-    #chart { margin: 24px 0; }
-    #chart h2 { font-size: 20px; }
-    .chart-note { color: #596779; font-size: 14px; }
-    .chart-row {
-      display: grid;
-      grid-template-columns: minmax(100px, 180px) minmax(0, 1fr) 72px;
-      gap: 12px;
-      align-items: center;
-      margin: 14px 0;
-    }
-    .chart-label { overflow-wrap: anywhere; }
-    .chart-track { background: #edf2fa; border-radius: 4px; }
-    .chart-bar { height: 24px; background: #2563eb; border-radius: 4px; }
-    .chart-count { text-align: right; font-variant-numeric: tabular-nums; }
-    @media (max-width: 540px) {
-      .chart-row { grid-template-columns: minmax(80px, 110px) minmax(0, 1fr) 60px; gap: 8px; }
-    }
-    .table-wrap { overflow-x: auto; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 16px;
-    }
-    th, td {
-      border: 1px solid #d9dfe7;
-      padding: 12px;
-      text-align: left;
-    }
-    th { background: #f2f5f9; }
-    details { margin-top: 24px; }
-    pre {
-      background: #f2f5f9;
-      padding: 16px;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-    }
+    :root{color-scheme:light;--ink:#17231f;--muted:#778079;--green:#244d3c;--line:rgba(42,54,47,.09)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;color:var(--ink);font-family:Inter,"Microsoft YaHei","PingFang SC",sans-serif;background:radial-gradient(ellipse at 73% 2%,rgba(255,255,255,.88),transparent 36%),radial-gradient(ellipse at 15% 56%,rgba(235,239,228,.7),transparent 35%),#f4f0eb}
+    button,input{font:inherit}button,a{-webkit-tap-highlight-color:transparent}a{color:inherit;text-decoration:none}[hidden]{display:none!important}
+    .app-shell{min-height:100vh;padding:12px}.sidebar{position:fixed;z-index:5;inset:12px auto 12px 12px;width:240px;display:flex;flex-direction:column;padding:22px 14px 14px;border:1px solid rgba(255,255,255,.75);border-radius:24px;background:rgba(255,255,255,.48);backdrop-filter:blur(22px);box-shadow:0 10px 40px rgba(62,52,42,.035)}
+    .brand{padding:0 12px 28px;font-size:25px;font-weight:750;letter-spacing:-.8px}.nav{display:grid;gap:6px}.nav-link{min-height:48px;display:flex;align-items:center;gap:14px;padding:0 13px;border-radius:15px;color:#4c5551;font-size:15px;transition:background .2s,color .2s,transform .2s}.nav-link:hover{background:rgba(255,255,255,.7);transform:translateX(2px)}.nav-link.active{color:var(--green);background:rgba(67,101,76,.09);font-weight:650}.nav-link svg{width:23px;height:23px;flex:0 0 auto}.sidebar-spacer{flex:1}.side-dataset{display:flex;gap:12px;align-items:center;padding:14px 12px;border:1px solid var(--line);border-radius:17px;background:rgba(255,255,255,.58)}.dataset-icon{width:48px;height:48px;display:grid;place-items:center;flex:0 0 auto;border-radius:15px;background:#e9eee8;color:var(--green)}.dataset-icon svg{width:25px;height:25px}.side-dataset strong,.side-dataset small{display:block}.side-dataset strong{font-size:13px}.side-dataset small{margin-top:3px;color:var(--muted);font-size:12px}
+    .main{min-width:0;margin-left:252px;padding-bottom:145px}.hero{min-height:290px;position:relative;overflow:hidden;display:grid;place-items:center;border:1px solid rgba(255,255,255,.7);border-radius:24px;background:radial-gradient(circle at 0% -28%,transparent 0 175px,rgba(255,255,255,.68) 176px 177px,transparent 178px),radial-gradient(circle at 94% 145%,transparent 0 235px,rgba(255,255,255,.55) 236px 237px,transparent 238px),radial-gradient(circle at 38% 125%,transparent 0 180px,rgba(255,255,255,.42) 181px 182px,transparent 183px),linear-gradient(135deg,rgba(250,247,243,.82),rgba(231,231,228,.72))}.hero-copy{padding:20px;text-align:center}.hero-copy strong,.hero-copy span{display:block}.hero-copy strong{margin-bottom:7px;color:#28382f;font-size:27px}.hero-copy span{color:#5e675f;font-size:15px}.profile-link{position:absolute;top:22px;right:24px;width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;background:rgba(255,255,255,.62)}.profile-link svg{width:22px;height:22px}
+    .content{padding:18px 12px 30px}.section-heading{margin:0 0 11px;font-size:18px;font-weight:720}.quick-grid{display:grid;grid-template-columns:1.08fr 1fr 1fr;grid-template-rows:112px 112px;gap:14px}.quick-card{position:relative;overflow:hidden;display:flex;gap:14px;align-items:flex-start;min-width:0;padding:17px;border:1px solid rgba(255,255,255,.8);border-radius:18px;text-align:left;color:var(--ink);cursor:pointer;box-shadow:inset 0 0 0 1px rgba(45,53,46,.025);transition:transform .2s,box-shadow .2s}.quick-card:hover{transform:translateY(-3px);box-shadow:0 12px 24px rgba(45,53,46,.08)}.quick-card:first-child{grid-row:span 2;flex-direction:column}.tone-green{background:linear-gradient(135deg,#f2f3ed,#eaeee7)}.tone-blue{background:linear-gradient(135deg,#f1f1fa,#e9e9f5)}.tone-sand{background:linear-gradient(135deg,#f7f1e8,#f2e9dc)}.tone-lilac{background:linear-gradient(135deg,#f6eff5,#f1e9f1)}.tone-sky{background:linear-gradient(135deg,#edf3f5,#e7eef1)}.icon-circle{width:54px;height:54px;display:grid;place-items:center;flex:0 0 auto;border-radius:18px;background:rgba(255,255,255,.43);color:var(--green)}.icon-circle svg{width:25px;height:25px}.tone-blue .icon-circle{color:#416caf}.tone-sand .icon-circle{color:#7a6d58}.tone-lilac .icon-circle{color:#685a7b}.tone-sky .icon-circle{color:#456b83}.card-copy{min-width:0;padding-top:6px}.card-copy strong,.card-copy small{display:block}.card-copy strong{font-size:15px}.card-copy small{margin-top:5px;color:#778079;font-size:12px;line-height:1.5}.card-arrow{position:absolute;top:16px;right:15px;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.68);color:#355746;font-size:21px}.card-deco{position:absolute;right:18px;bottom:12px;display:flex;gap:10px;align-items:end;opacity:.16}.card-deco i{width:23px;border-radius:8px;background:currentColor}.card-deco i:nth-child(1){height:28px}.card-deco i:nth-child(2){height:54px}.card-deco i:nth-child(3){height:76px}
+    .dataset-strip{display:flex;align-items:center;gap:15px;margin-top:18px;padding:14px 18px;border:1px solid rgba(255,255,255,.82);border-radius:18px;background:rgba(255,255,255,.57);backdrop-filter:blur(12px)}.dataset-label small,.dataset-label strong{display:block}.dataset-label small{color:var(--muted);font-size:12px}.dataset-label strong{margin-top:2px;font-size:15px}.dataset-divider{width:1px;height:34px;margin:0 5px;background:#c9cec9}.dataset-count{color:#68716b;font-size:14px}.dataset-count strong{color:var(--ink);font-size:18px}.dataset-button{margin-left:auto;padding:11px 16px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.7);color:var(--green);cursor:pointer}#overviewPanel{margin-top:12px;padding:18px;border:1px solid rgba(255,255,255,.85);border-radius:17px;background:rgba(255,255,255,.68)}#overviewPanel h3{margin:0 0 8px;font-size:16px}#overviewPanel p{margin:5px 0;color:#68716b;font-size:13px}#columnList{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}#columnList span{padding:5px 9px;border-radius:9px;background:#edf1ed;color:#52645a;font-size:12px}.footnote{padding:20px 4px 0;color:#8a908b;font-size:12px}
+    .chat-heading{display:flex;align-items:center;justify-content:space-between;max-width:860px;margin:14px auto 0}.chat-heading h1{margin:0;font-size:20px}#newChatButton{padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.7);color:var(--green);cursor:pointer}.conversation{max-width:860px;margin:18px auto 30px;display:flex;flex-direction:column;gap:20px}.chat-user-row{display:flex;justify-content:flex-end}.chat-user-bubble{max-width:min(78%,620px);padding:13px 17px;border:1px solid rgba(255,255,255,.9);border-radius:20px 20px 5px 20px;background:rgba(255,255,255,.8);box-shadow:0 4px 16px rgba(50,45,38,.05);white-space:pre-wrap;overflow-wrap:anywhere}.chat-assistant-row{display:grid;grid-template-columns:38px minmax(0,1fr);gap:12px;align-items:start}.assistant-mark{width:36px;height:36px;display:grid;place-items:center;border-radius:13px;background:#e3ebe4;color:var(--green);font-size:12px;font-weight:750}.assistant-content{min-width:0;padding:4px 0 10px}.turn-message{margin:0 0 10px;color:#69736c;font-size:14px}.turn-answer{margin:0 0 14px;color:#273c30;font-size:16px;line-height:1.75}.turn-result:empty{display:none}.turn-result table{margin-top:12px}.turn-export{margin:10px 0;padding:9px 13px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.78);color:var(--green);cursor:pointer}.turn-export:disabled{opacity:.5;cursor:not-allowed}.turn-plan{margin-top:12px}.turn-plan pre{max-height:300px}.turn-chart{margin:18px 0}.turn-chart h2{margin:6px 0;font-size:17px}.turn-chart .chart-bar{background:#3f765d}.turn-thinking:before{content:"";display:inline-block;width:7px;height:7px;margin-right:9px;border-radius:50%;background:#588369;animation:pulse 1s infinite alternate}@keyframes pulse{to{opacity:.25;transform:scale(.75)}}
+    .turn-chart .chart-note{color:var(--muted);font-size:13px}.chart-row{display:grid;grid-template-columns:minmax(100px,220px) minmax(0,1fr) 72px;gap:12px;align-items:center;margin:13px 0}.chart-label{overflow-wrap:anywhere;font-size:14px}.chart-track{overflow:hidden;background:#e9edf0;border-radius:6px}.chart-bar{height:22px;border-radius:6px}.chart-count{text-align:right;font-variant-numeric:tabular-nums}.turn-result{overflow-x:auto}.turn-result table{width:100%;border-collapse:collapse;background:rgba(255,255,255,.76)}.turn-result th,.turn-result td{border:1px solid #e0e5e9;padding:10px 12px;text-align:left;vertical-align:top}.turn-result th{background:#f0f3f5}.turn-result pre{max-height:360px;overflow:auto;background:#f1f3f2;padding:14px;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere}.turn-plan summary{cursor:pointer;color:#4d6558;font-weight:600}.chat-dock{position:fixed;z-index:4;left:264px;right:24px;bottom:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 20px 14px;background:linear-gradient(180deg,rgba(244,240,235,0),rgba(244,240,235,.94) 28%,#f4f0eb 100%)}#askForm{width:min(820px,100%);display:flex;align-items:center;gap:12px;padding:9px 10px 9px 20px;border:1px solid rgba(255,255,255,.96);border-radius:25px;background:rgba(255,255,255,.93);box-shadow:0 12px 35px rgba(52,47,41,.14);backdrop-filter:blur(18px)}.search-icon{width:25px;height:25px;flex:0 0 auto;color:#858b90}#question{width:100%;min-width:0;height:46px;border:0;outline:0;color:var(--ink);background:transparent;font-size:16px}#question::placeholder{color:#858b90}#askButton{width:52px;height:52px;flex:0 0 auto;display:grid;place-items:center;border:0;border-radius:17px;color:white;background:var(--green);cursor:pointer;transition:transform .2s,background .2s}#askButton:hover{transform:translateY(-1px);background:#183e2f}#askButton:disabled{opacity:.65;cursor:wait}#askButton svg{width:23px;height:23px}.composer-note{color:#828780;font-size:11px}
+    @media(max-width:900px){.sidebar{width:202px}.main{margin-left:214px}.quick-grid{grid-template-columns:1fr 1fr;grid-template-rows:auto}.quick-card,.quick-card:first-child{min-height:112px;grid-row:auto;flex-direction:row}}
+    @media(max-width:620px){.app-shell{padding:0}.sidebar{position:static;width:auto;inset:auto;margin:8px;padding:10px 12px;border-radius:18px}.brand{padding:3px 8px 9px;font-size:21px}.nav{display:flex;gap:4px;overflow-x:auto}.nav-link{min-height:40px;padding:0 10px;white-space:nowrap;font-size:13px}.nav-link svg{width:19px;height:19px}.sidebar-spacer,.side-dataset{display:none}.main{margin:8px;padding-bottom:128px}.hero{min-height:190px;border-radius:18px}.hero-copy strong{font-size:21px}.profile-link{top:16px;right:16px}.content{padding:16px 4px 24px}.quick-grid{grid-template-columns:1fr;gap:9px}.quick-card,.quick-card:first-child{min-height:96px}.dataset-strip{flex-wrap:wrap;gap:10px;padding:12px}.dataset-divider{display:none}.dataset-button{width:100%;margin-left:0}.chat-dock{left:8px;right:8px;padding:12px 8px 9px}#askForm{padding-left:13px;gap:7px;border-radius:20px}#question{font-size:14px}#askButton{width:46px;height:46px;border-radius:15px}.chat-heading{margin:12px 4px 0}.conversation{margin:14px 4px 25px;gap:14px}.chat-user-bubble{max-width:88%}.chat-assistant-row{grid-template-columns:31px minmax(0,1fr);gap:9px}.assistant-mark{width:30px;height:30px;border-radius:10px;font-size:10px}.chart-row{grid-template-columns:minmax(82px,125px) minmax(0,1fr) 55px;gap:8px}}
+    .hero{min-height:calc(100dvh - 190px);border:0;background:transparent}
+    .drawer{position:fixed;inset:0 0 0 auto;margin:0;width:min(880px,100vw);max-width:100vw;height:100dvh;max-height:100dvh;border:0;border-left:1px solid var(--line);padding:26px;background:#f7f4ef;color:var(--ink);box-shadow:-16px 0 60px rgba(30,45,35,.12);overflow-y:auto}
+    .drawer::backdrop{background:rgba(30,40,33,.28);backdrop-filter:blur(3px)}
+    .drawer-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}
+    .drawer-heading h2{margin:0;font-size:21px}
+    .drawer-close{border:1px solid var(--line);border-radius:12px;background:white;color:var(--green);padding:9px 15px;cursor:pointer}
+    .drawer .quick-grid{grid-template-columns:1fr 1fr;grid-template-rows:auto}
+    .drawer .quick-card,.drawer .quick-card:first-child{grid-row:auto;min-height:136px;flex-direction:column;padding-right:48px}
+    .drawer .dataset-strip{flex-wrap:wrap}.drawer .dataset-button{margin-left:0}
+    @media(max-width:900px) and (min-width:621px){.chat-dock{left:226px}}
+    @media(max-width:620px){.drawer{padding:20px 14px}.drawer .quick-grid{grid-template-columns:1fr}.hero{min-height:calc(100dvh - 260px)}}
+
+    .sidebar{overflow-y:auto}.history-panel{margin-top:18px;min-height:100px;overflow-y:auto;flex:1}.history-panel h2{font-size:13px;color:var(--muted);margin:0 8px 8px}#historyNotice{font-size:11px;color:var(--muted);line-height:1.6;padding:0 8px}.history-item{display:flex;align-items:center;border-radius:10px;margin:4px 0}.history-item.selected{background:#e4ebe3}.history-item button{border:0;background:transparent;cursor:pointer;color:var(--green);padding:8px 4px}.history-open{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}.history-action{font-size:10px}#sideNewChat{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:10px;background:white;color:var(--green);cursor:pointer}.turn-answer{white-space:pre-wrap;overflow-wrap:anywhere}.evidence-note{font-size:12px;color:var(--muted);line-height:1.7}.source-card{padding:12px;margin:10px 0;background:#fff9;border:1px solid var(--line);border-radius:12px}.source-card h3{font-size:14px}.source-card p{font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65}.source-records{max-height:420px;overflow:auto}.source-records summary,.data-details summary{cursor:pointer;color:var(--green);padding:8px 0;font-size:14px}.data-details{margin:12px 0;border-top:1px solid var(--line)}button:disabled{cursor:wait;opacity:.5}@media(max-width:620px){.history-panel{max-height:140px}.history-item{max-width:100%}.sidebar-spacer{display:none}}
+
+    .assistant-mark{background:linear-gradient(145deg,#fffaf0,#e5eddf);border:1px solid #d8e3d5;border-radius:14px;box-shadow:0 3px 10px #315e4810;overflow:visible}
+    .assistant-mark svg{width:100%;height:100%;overflow:visible}.robot-eyes{transform-box:fill-box;transform-origin:center;animation:robot-blink 6s infinite}
+    @keyframes robot-blink{0%,43%,47%,100%{transform:scaleY(1)}45%{transform:scaleY(.12)}}
+    @media(prefers-reduced-motion:reduce){.robot-eyes{animation:none}}
   </style>
 </head>
 <body>
-  <h1>DataAgent 智能分析</h1>
-  <p>输入问题，系统会生成分析计划并计算结果。</p>
-
-  <form id="askForm">
-    <textarea id="question" aria-label="分析问题" placeholder="例如：数据分析师岗位最多的前五个国家是哪些？">数据分析师岗位最多的前五个国家是哪些？请合并国家别名后统计。</textarea>
-    <button id="askButton" type="submit">开始分析</button>
-  </form>
-
-  <p id="message" role="status" aria-live="polite"></p>
-  <p id="answer" hidden></p>
-  <section id="chart" aria-label="岗位记录数条形图" hidden></section>
-  <button id="exportButton" type="button" hidden disabled>导出 CSV</button>
-  <div id="result" class="table-wrap"></div>
-
-  <details id="planDetails" hidden>
-    <summary>查看分析计划</summary>
-    <pre id="plan"></pre>
-  </details>
-
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="主导航">
+      <a class="brand" href="/agent.html">DataAgent</a>
+      <nav class="nav">
+        <a class="nav-link active" href="/agent.html" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1z"/></svg>智能分析</a>
+        <a class="nav-link" href="#datasetInfo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>数据概览</a>
+        <a class="nav-link" href="#conversation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5m0 14h17M8 15l4-5 3 3 5-7"/></svg>可视化图表</a>
+        <a class="nav-link" href="#quickAnalyses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="10" width="8" height="11" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/></svg>案例</a>
+        <a class="nav-link" href="/docs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.4 2.4 0 1 1 4 1.8c-1 .8-1.7 1.2-1.7 2.7M12 17h.01"/></svg>关于与接口</a>
+      </nav>
+      <button id="sideNewChat" type="button">＋ 新建对话</button>
+      <section class="history-panel" aria-label="历史对话"><h2>历史对话</h2><div id="historyList"></div><p id="historyNotice">仅保存在当前浏览器，最多20个对话。</p></section>
+      <div class="sidebar-spacer"></div>
+      <a class="side-dataset" href="#datasetInfo"><svg class="dataset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg><span><strong>全球招聘岗位数据</strong><small id="sideRowCount">正在读取数据集…</small></span></a>
+    </aside>
+    <main class="main">
+      <section class="hero" id="hero"><div class="hero-copy"><strong>让招聘数据回答你的问题</strong><span>输入岗位、技能、公司或国家，开始探索数据</span></div><a class="profile-link" href="/docs" aria-label="查看 API 文档"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c.7-4.1 3.4-6 8-6s7.3 1.9 8 6"/></svg></a></section>
+      <div class="content">
+        <section id="landing" hidden>
+          <section id="quickAnalyses"><h2 class="section-heading">常用分析</h2><div class="quick-grid">
+            <button class="quick-card tone-green" type="button" data-prompt="统计 country_clean 字段中岗位记录数最多的前5个国家"><span class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20v-7h4v7M10 20V5h4v15M16 20v-11h4v11"/></svg></span><span class="card-copy"><strong>各国家岗位数量排名</strong><small>统计招聘岗位数量最多的国家</small></span><span class="card-arrow">→</span><span class="card-deco"><i></i><i></i><i></i></span></button>
+            <button class="quick-card tone-blue" type="button" data-prompt="统计 company_name 字段中岗位记录数最多的前10家公司"><span class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0-18"/></svg></span><span class="card-copy"><strong>招聘岗位最多的公司</strong><small>比较各家公司发布的岗位数量</small></span><span class="card-arrow">→</span></button>
+            <button class="quick-card tone-sand" type="button" data-prompt="统计 title 字段中岗位记录数最多的前10个岗位名称"><span class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m8 8-4 4 4 4m8-8 4 4-4 4m-3-11-2 14"/></svg></span><span class="card-copy"><strong>热门岗位分布</strong><small>查看数据集中常见的岗位名称</small></span><span class="card-arrow">→</span><span class="card-deco"><i></i><i></i><i></i></span></button>
+            <button class="quick-card tone-lilac" type="button" data-prompt="筛选 title 中包含 Data Analyst 的岗位记录"><span class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span class="card-copy"><strong>Data Analyst 岗位</strong><small>筛选数据分析师相关招聘记录</small></span><span class="card-arrow">→</span></button>
+            <button class="quick-card tone-sky" type="button" data-prompt="统计 country_clean 字段中岗位记录数最多的前10个国家"><span class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/></svg></span><span class="card-copy"><strong>国家别名归一统计</strong><small>使用清洗后的国家字段汇总记录</small></span><span class="card-arrow">→</span></button>
+          </div></section>
+          <section class="dataset-strip" id="datasetInfo"><span class="dataset-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span><span class="dataset-label"><small>当前数据集</small><strong>全球招聘岗位数据</strong></span><span class="dataset-divider"></span><span class="dataset-count"><strong id="rowCount">加载中…</strong> 条岗位记录</span><button class="dataset-button" id="overviewButton" type="button">查看数据概览　›</button></section>
+          <section id="overviewPanel" hidden aria-live="polite"><h3 id="datasetName">数据集概览</h3><p id="datasetStats"></p><p id="overviewMessage"></p><div id="columnList" aria-label="数据字段"></div></section>
+          <p class="footnote">DataAgent · 基于当前招聘数据进行筛选与统计。结果范围取决于数据集和可用分析工具。</p>
+        </section>
+        <header class="chat-heading" id="chatHeading" hidden><h1>智能分析</h1><button id="newChatButton" type="button">＋ 新建分析</button></header>
+        <section id="conversation" class="conversation" aria-label="分析对话"></section>
+      </div>
+    </main>
+    <div class="chat-dock"><form id="askForm"><svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="10.8" cy="10.8" r="7.2"/><path d="m16.2 16.2 5 5"/></svg><input id="question" type="search" aria-label="分析问题" placeholder="输入你想了解的岗位、技能、公司或地区…" autocomplete="off" maxlength="4000" enterkeyhint="send"><button id="askButton" type="submit" aria-label="发送问题"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20V4m-7 7 7-7 7 7"/></svg></button></form><div class="composer-note">按 Enter 发送 · DataAgent 可能会出错，请结合数据范围检查分析结果。</div></div>
+  </div>
+  <dialog id="casesDrawer" class="drawer" aria-labelledby="casesDrawerTitle">
+    <header class="drawer-heading"><h2 id="casesDrawerTitle">分析案例</h2><button class="drawer-close" type="button">关闭</button></header>
+  </dialog>
+  <dialog id="datasetDrawer" class="drawer" aria-labelledby="datasetDrawerTitle">
+    <header class="drawer-heading"><h2 id="datasetDrawerTitle">数据概览</h2><button class="drawer-close" type="button">关闭</button></header>
+  </dialog>
   <script>
-    const form = document.getElementById("askForm");
-    const questionInput = document.getElementById("question");
-    const button = document.getElementById("askButton");
-    const message = document.getElementById("message");
-    const resultBox = document.getElementById("result");
-    const planBox = document.getElementById("plan");
-    const planDetails = document.getElementById("planDetails");
-    const chartBox = document.getElementById("chart");
-    const answerBox = document.getElementById("answer");
-    const exportButton = document.getElementById("exportButton");
-    let exportRows = [];
-
-    function resetExport() {
-      exportRows = [];
-      exportButton.disabled = true;
-      exportButton.hidden = true;
+    "use strict";
+    const form=document.getElementById("askForm"),questionInput=document.getElementById("question"),sendButton=document.getElementById("askButton");
+    const landing=document.getElementById("landing"),hero=document.getElementById("hero"),conversation=document.getElementById("conversation"),chatHeading=document.getElementById("chatHeading");
+    const rowCount=document.getElementById("rowCount"),sideRowCount=document.getElementById("sideRowCount"),overviewButton=document.getElementById("overviewButton"),overviewPanel=document.getElementById("overviewPanel");
+    const fieldNames={title:"岗位名称",normalized_title:"标准岗位名称",company_name:"公司名称",country:"国家（原始值）",country_clean:"国家",count:"记录数",skills_required:"技能要求",industry:"行业",function:"职能",occupational_category:"职业类别",employment_type:"雇佣类型",work_model:"工作方式",schedule:"工作时间",shift:"班次",experience_level:"经验级别",job_level_normalized:"标准岗位级别",years_experience_numeric:"工作年限",education_level:"学历要求",minimum_qualifications:"最低任职要求",preferred_qualifications:"优先条件",responsibilities:"岗位职责",certifications:"证书要求",languages_required:"语言要求",salary_min:"薪资下限",salary_max:"薪资上限",salary_currency:"薪资币种",salary_rate_unit:"薪资周期",salary_type:"薪资类型",pay_frequency:"发薪频率",bonus:"奖金",equity:"股权",on_target_earnings:"目标总收入",benefits:"福利",city:"城市",location_resolved:"标准工作地点",locations:"工作地点",remote_eligibility_regions:"远程工作适用地区",latitude:"纬度",longitude:"经度",visa_sponsorship_available:"是否提供签证支持",work_authorization_requirements:"工作许可要求",security_clearance:"安全审查要求",relocation_assistance:"搬迁支持",travel_required:"是否需要出差",travel_percentage:"出差比例",date_posted:"发布日期",closing_date:"截止日期",job_description:"岗位描述",ats_name:"招聘系统",column:"统计字段",mean:"平均值",median:"中位数",min:"最小值",max:"最大值"};
+    const countries={"united states":"美国","united states of america":"美国",usa:"美国",us:"美国","united kingdom":"英国",uk:"英国","u.k.":"英国",gb:"英国",india:"印度",france:"法国",germany:"德国",canada:"加拿大",china:"中国",japan:"日本",australia:"澳大利亚",singapore:"新加坡",netherlands:"荷兰",ireland:"爱尔兰",spain:"西班牙",italy:"意大利",switzerland:"瑞士",sweden:"瑞典",poland:"波兰",brazil:"巴西",mexico:"墨西哥","south korea":"韩国","new zealand":"新西兰","united arab emirates":"阿联酋","south africa":"南非",israel:"以色列"};
+    const jobNames={"data analyst":"数据分析师","data scientist":"数据科学家","data engineer":"数据工程师","software engineer":"软件工程师"};
+    const regionNames=typeof Intl.DisplayNames==="function"?new Intl.DisplayNames(["zh-CN"],{type:"region"}):null;
+    function fieldName(name){return Object.hasOwn(fieldNames,name)?fieldNames[name]:name}
+    function displayValue(value,column=""){if(value===null||value===undefined)return "—";if(column==="country"||column==="country_clean"){const text=String(value).trim(),key=text.toLowerCase();if(Object.hasOwn(countries,key))return countries[key];if(regionNames&&/^[a-z]{2}$/i.test(text))return regionNames.of(text.toUpperCase());return text}if(column==="column")return fieldName(value);if(typeof value==="boolean")return value?"是":"否";if((column==="title"||column==="normalized_title")&&typeof value==="string")return value.replace(/Data Analyst|Data Scientist|Data Engineer|Software Engineer/gi,m=>jobNames[m.toLowerCase()]);return typeof value==="object"?JSON.stringify(value):String(value)}
+    function make(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node}
+    async function loadDatasetCount(){try{const response=await fetch("/dataset/overview");if(!response.ok)throw new Error();const data=await response.json(),formatted=Number(data.rows).toLocaleString("zh-CN");rowCount.textContent=formatted;sideRowCount.textContent=`${formatted} 条记录`}catch{rowCount.textContent="暂不可用";sideRowCount.textContent="数据集暂不可用"}}
+    loadDatasetCount();
+    const casesDrawer=document.getElementById("casesDrawer"),datasetDrawer=document.getElementById("datasetDrawer");
+    casesDrawer.append(document.getElementById("quickAnalyses"));
+    datasetDrawer.append(document.getElementById("datasetInfo"),overviewPanel);
+    for(const drawer of [casesDrawer,datasetDrawer]){
+      drawer.querySelector(".drawer-close").addEventListener("click",()=>drawer.close());
+      drawer.addEventListener("click",event=>{if(event.target===drawer){const bounds=drawer.getBoundingClientRect();if(event.clientX<bounds.left||event.clientX>bounds.right||event.clientY<bounds.top||event.clientY>bounds.bottom)drawer.close()}});
     }
-
-    function prepareExport(result) {
-      resetExport();
-      const rows = Array.isArray(result) ? result : [result];
-      if (!rows.length || !rows.every(row => row && typeof row === "object" &&
-          !Array.isArray(row))) return;
-      if (!rows.some(row => Object.keys(row).length)) return;
-      exportRows = rows;
-      exportButton.disabled = false;
-      exportButton.hidden = false;
+    document.querySelectorAll('a[href="#quickAnalyses"]').forEach(link=>link.addEventListener("click",event=>{event.preventDefault();if(!casesDrawer.open)casesDrawer.showModal()}));
+    document.querySelectorAll('a[href="#datasetInfo"]').forEach(link=>link.addEventListener("click",event=>{event.preventDefault();if(!datasetDrawer.open)datasetDrawer.showModal();if(overviewPanel.hidden&&!overviewButton.disabled)overviewButton.click()}));
+    document.querySelectorAll(".quick-card[data-prompt]").forEach(card=>card.addEventListener("click",()=>{casesDrawer.close();questionInput.value=card.dataset.prompt;form.requestSubmit()}));
+    overviewButton.addEventListener("click",async()=>{const msg=document.getElementById("overviewMessage");overviewButton.disabled=true;overviewButton.textContent="正在读取…";msg.textContent="";try{const response=await fetch("/dataset/overview"),data=await response.json();if(!response.ok)throw new Error(data.detail||"读取数据概览失败");document.getElementById("datasetName").textContent=data.dataset||"数据集概览";document.getElementById("datasetStats").textContent=`${Number(data.rows).toLocaleString("zh-CN")} 条记录 · ${data.columns} 个字段`;const list=document.getElementById("columnList");list.replaceChildren();for(const column of data.column_names||[]){const chip=make("span","",fieldName(column));chip.title=column;list.append(chip)}overviewPanel.hidden=false;overviewPanel.scrollIntoView({behavior:"smooth",block:"nearest"})}catch(error){msg.textContent=`读取数据概览失败：${error.message}`}finally{overviewButton.disabled=false;overviewButton.textContent=overviewPanel.hidden?"查看数据概览　›":"刷新数据概览　›"}});
+    function createAssistantAvatar(){
+      const mark=make("div","assistant-mark");mark.title="数芽 · 你的数据搭子";
+      mark.setAttribute("role","img");mark.setAttribute("aria-label","数芽，小机器人助手");
+      mark.innerHTML=`<svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <path d="M24 14V9" stroke="#315e48" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M24 10C17 10 16 5 17 3c6 0 9 3 7 7Z" fill="#85bb78"/>
+        <path d="M24 10c0-6 4-8 9-7 0 5-3 8-9 7Z" fill="#b5cf83"/>
+        <rect x="5" y="23" width="5" height="10" rx="2.5" fill="#e6b676"/>
+        <rect x="38" y="23" width="5" height="10" rx="2.5" fill="#e6b676"/>
+        <rect x="9" y="14" width="30" height="27" rx="11" fill="#315e48"/>
+        <rect x="12" y="17" width="24" height="20" rx="8" fill="#f2f4dc"/>
+        <g class="robot-eyes" fill="#315e48"><rect x="17" y="23" width="4" height="6" rx="2"/><rect x="27" y="23" width="4" height="6" rx="2"/></g>
+        <circle cx="15" cy="30" r="2" fill="#edbc96"/><circle cx="33" cy="30" r="2" fill="#edbc96"/>
+        <path d="M22 31q2 3 4 0" stroke="#315e48" stroke-width="1.7" stroke-linecap="round"/>
+        <path d="m38 9 1-3 1 3 3 1-3 1-1 3-1-3-3-1 3-1Z" fill="#e6b676"/>
+      </svg>`;
+      return mark;
     }
-
-    function csvCell(value, column) {
-      let text = value === null || value === undefined ? "" : displayValue(value, column);
-      // 文本只作为文本导出，避免电子表格将数据当作公式执行。
-      if (typeof value !== "number" && (/^[\s\uFEFF]*[=+@-]/.test(text) || /^[\t\r\n]/.test(text))) {
-        text = "'" + text;
+    function createTurn(question){
+      const userRow=make("div","chat-user-row"),bubble=make("div","chat-user-bubble",question);userRow.append(bubble);
+      const assistantRow=make("article","chat-assistant-row"),mark=createAssistantAvatar(),content=make("div","assistant-content");
+      const message=make("p","turn-message turn-thinking","正在生成计划并分析，请稍候…"),answer=make("p","turn-answer");answer.hidden=true;
+      const chart=make("section","turn-chart");chart.hidden=true;chart.setAttribute("aria-label","岗位记录数条形图");
+      const exportButton=make("button","turn-export","导出 CSV");exportButton.type="button";exportButton.hidden=true;exportButton.disabled=true;
+      const result=make("div","turn-result");const planDetails=make("details","turn-plan"),summary=make("summary","","查看分析计划"),plan=make("pre");planDetails.append(summary,plan);planDetails.hidden=true;
+      const evidence=make("section","turn-evidence");evidence.hidden=true;
+      const dataDetails=make("details","data-details");dataDetails.hidden=true;dataDetails.append(make("summary","","查看图表与结果明细"),chart,exportButton,result);
+      content.append(message,answer,evidence,dataDetails,planDetails);assistantRow.append(mark,content);conversation.append(userRow,assistantRow);
+      const ui={message,answer,chart,exportButton,result,planDetails,plan,evidence,dataDetails,exportRows:[]};
+      exportButton.addEventListener("click",()=>downloadCsv(ui.exportRows));
+      return {ui,assistantRow};
+    }
+    function resetExport(ui){ui.exportRows=[];ui.exportButton.disabled=true;ui.exportButton.hidden=true}
+    function prepareExport(value,ui){resetExport(ui);const rows=Array.isArray(value)?value:[value];if(!rows.length||!rows.every(row=>row&&typeof row==="object"&&!Array.isArray(row))||!rows.some(row=>Object.keys(row).length))return;ui.exportRows=rows;ui.exportButton.disabled=false;ui.exportButton.hidden=false}
+    function csvCell(value,column){let text=value===null||value===undefined?"":displayValue(value,column);if(typeof value!=="number"&&(/^[\s\uFEFF]*[=+@-]/.test(text)||/^[\t\r\n]/.test(text)))text="'"+text;return '"'+text.replace(/"/g,'""')+'"'}
+    function buildCsv(rows){const columns=[...new Set(rows.flatMap(row=>Object.keys(row)))],lines=[columns.map(col=>csvCell(fieldName(col),"")).join(",")];for(const row of rows)lines.push(columns.map(col=>csvCell(row[col],col)).join(","));return "\uFEFF"+lines.join("\r\n")+"\r\n"}
+    function downloadCsv(rows){if(!rows||!rows.length)return;const blob=new Blob([buildCsv(rows)],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),link=document.createElement("a"),now=new Date();const stamp=[now.getFullYear(),now.getMonth()+1,now.getDate(),now.getHours(),now.getMinutes(),now.getSeconds()].map(n=>String(n).padStart(2,"0")).join("");link.href=url;link.download=`分析结果_${stamp}.csv`;document.body.append(link);try{link.click()}finally{link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}}
+    function renderPlan(plan,ui){const lines=(plan.tool_calls||[]).map((call,index)=>{const args=call.arguments||{},column=fieldName(args.column||"");let desc;if(call.name==="filter_rows")desc=`筛选「${column}」中包含「${displayValue(args.keyword,args.column)}」的记录。`;else if(call.name==="count_values")desc=`按「${column}」统计记录数，忽略缺失值，按数量从高到低取前 ${args.top_n??10} 项。`;else if(call.name==="summarize_numeric")desc=`计算「${column}」的有效数量、平均值、中位数、最小值和最大值。`;else desc="执行数据处理步骤。";return `第 ${index+1} 步：${desc}`});ui.plan.textContent=lines.join("\n\n");ui.planDetails.hidden=false}
+    function renderAnswer(step,ui){const rows=step.result,column=step.arguments?.column;if(step.tool!=="count_values"||!column||!Array.isArray(rows)||!rows.length||!rows.every(row=>row&&Number.isFinite(row.count)))return;const highest=Math.max(...rows.map(row=>row.count)),leaders=rows.filter(row=>row.count===highest).map(row=>displayValue(row[column],column));ui.answer.textContent=`本次返回 ${rows.length} 项统计结果。其中，${leaders.join("、")}${leaders.length>1?"并列":""}最多，为 ${highest.toLocaleString("zh-CN")} 条记录。`;ui.answer.hidden=false}
+    function renderChart(step,ui){const rows=step.result,column=step.arguments?.column;if(step.tool!=="count_values"||!column||!Array.isArray(rows)||!rows.length||!rows.every(row=>row&&Object.hasOwn(row,column)&&Number.isFinite(row.count)&&row.count>=0))return;const shown=[...rows].sort((a,b)=>b.count-a.count).slice(0,20),maximum=shown[0].count;ui.chart.append(make("h2","","岗位记录数对比"),make("p","chart-note","条形从 0 开始，长度表示记录数。"+(rows.length>20?"图表仅显示前 20 项，完整结果可导出 CSV。":"")));for(const row of shown){const item=make("div","chart-row"),label=make("span","chart-label",displayValue(row[column],column)),track=make("div","chart-track"),bar=make("div","chart-bar");track.setAttribute("aria-hidden","true");bar.style.width=`${maximum>0?row.count/maximum*100:0}%`;track.append(bar);item.append(label,track,make("span","chart-count",row.count.toLocaleString("zh-CN")));ui.chart.append(item)}ui.chart.hidden=false}
+    function renderResult(value,ui){if(!Array.isArray(value)){const pre=make("pre");pre.textContent=value&&typeof value==="object"?Object.entries(value).map(([key,item])=>`${fieldName(key)}：${displayValue(item,key)}`).join("\n"):displayValue(value);ui.result.append(pre);prepareExport(value,ui);return}if(!value.length){ui.result.textContent="没有符合条件的记录。";return}const columns=[...new Set(value.flatMap(row=>Object.keys(row)))],table=document.createElement("table"),head=table.createTHead().insertRow();for(const column of columns){const cell=make("th","",fieldName(column));cell.scope="col";head.append(cell)}const body=table.createTBody(),visible=value.slice(0,200);for(const row of visible){const tr=body.insertRow();for(const column of columns)tr.insertCell().textContent=displayValue(row[column],column)}ui.result.append(table);if(value.length>visible.length)ui.result.append(make("p","turn-message",`结果共 ${value.length.toLocaleString("zh-CN")} 条，页面展示前 200 条；CSV 可导出完整结果。`));prepareExport(value,ui)}
+    function beginChat(){landing.hidden=true;hero.hidden=true;chatHeading.hidden=false}
+    const historyKey="dataagent.conversations.v1";
+    let chats=[],activeId=null,busy=false;
+    const historyList=document.getElementById("historyList"),historyNotice=document.getElementById("historyNotice");
+    try{const saved=JSON.parse(localStorage.getItem(historyKey)||"{}");chats=Array.isArray(saved.chats)?saved.chats.filter(c=>c&&typeof c.id==="string"&&Array.isArray(c.turns)).slice(0,20):[];activeId=saved.activeId}catch{historyNotice.textContent="无法读取本地历史，本次仍可正常分析。"}
+    function activeChat(){return chats.find(c=>c.id===activeId)}
+    function saveHistory(){
+      try{const snapshots=chats.slice(0,20).map(c=>({...c,turns:c.turns.slice(-30).map(t=>({question:t.question,error:t.error,data:t.data?compactData(t.data):null}))}));localStorage.setItem(historyKey,JSON.stringify({activeId,chats:snapshots}));historyNotice.textContent="仅保存在当前浏览器，最多20个对话。"}
+      catch{historyNotice.textContent="浏览器存储空间不足或不可用，本次更新未保存。"}
+      renderHistory();
+    }
+    function compactData(data){
+      return {...data,historyPreview:true,steps:(data.steps||[]).map(step=>({...step,result:step.tool==="filter_rows"?[]:step.result})).filter(step=>step.tool!=="filter_rows")};
+    }
+    function renderHistory(){
+      historyList.replaceChildren();
+      for(const chat of chats){
+        const row=make("div","history-item"+(chat.id===activeId?" selected":""));
+        const open=make("button","history-open",chat.title||"新对话");open.type="button";open.title=chat.title||"新对话";open.disabled=busy;open.onclick=()=>openChat(chat.id);
+        const rename=make("button","history-action","改名");rename.type="button";rename.disabled=busy;rename.setAttribute("aria-label","重命名对话");rename.onclick=()=>{const title=prompt("对话名称",chat.title||"");if(title&&title.trim()){chat.title=title.trim().slice(0,60);saveHistory()}};
+        const remove=make("button","history-action","删除");remove.type="button";remove.disabled=busy;remove.setAttribute("aria-label","删除对话");remove.onclick=()=>{if(confirm("删除这个本地对话？")){chats=chats.filter(c=>c.id!==chat.id);if(activeId===chat.id)openChat(chats[0]?.id||null);saveHistory()}};
+        row.append(open,rename,remove);historyList.append(row);
       }
-      return '"' + text.replace(/"/g, '""') + '"';
     }
-
-    function buildCsv(rows) {
-      const columns = [...new Set(rows.flatMap(row => Object.keys(row)))];
-      const lines = [columns.map(column => csvCell(fieldName(column), "")).join(",")];
-      for (const row of rows) {
-        lines.push(columns.map(column => csvCell(row[column], column)).join(","));
+    function showEvidence(data,ui){
+      const sources=data.evidence||[];
+      if(!sources.length)return;
+      const filtered=sources.find(s=>s.tool==="filter_rows");
+      const note=filtered?`匹配 ${filtered.total_rows} 条岗位记录；文字分析参考其中 ${filtered.shown_rows} 条。${filtered.sampled?"这是部分样本，不代表全部岗位。":""}`:"依据本次查询的统计结果；排名仅覆盖返回的项目。";
+      ui.evidence.append(make("p","evidence-note",note));
+      if(filtered){
+        const records=make("details","source-records");records.append(make("summary","","查看原始岗位（本次参考样本）"));
+        for(const row of filtered.result||[]){const card=make("article","source-card");card.append(make("h3","",`${row.company_name||"公司未标注"} · ${row.title||"岗位未标注"}`));for(const [key,value] of Object.entries(row)){if(value!==null&&key!=="title"&&key!=="company_name")card.append(make("p","",`${fieldName(key)}：${displayValue(value,key)}`))}records.append(card)}
+        records.append(make("p","evidence-note","较长字段最多展示前3000个字符。"));ui.evidence.append(records);
       }
-      // UTF-8 BOM 便于 Excel 识别中文；采用 CSV 标准引号转义与换行。
-      return "\uFEFF" + lines.join("\r\n") + "\r\n";
+      ui.evidence.hidden=false;
     }
-
-    exportButton.addEventListener("click", () => {
-      if (exportButton.disabled || !exportRows.length) return;
-      const blob = new Blob([buildCsv(exportRows)], {type: "text/csv;charset=utf-8"});
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      const now = new Date();
-      const stamp = [now.getFullYear(), now.getMonth() + 1, now.getDate(),
-        now.getHours(), now.getMinutes(), now.getSeconds()]
-        .map(value => String(value).padStart(2, "0")).join("");
-      link.href = url;
-      link.download = `分析结果_${stamp}.csv`;
-      document.body.appendChild(link);
-      try {
-        link.click();
-      } finally {
-        link.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    function showResult(data,ui){
+      ui.message.classList.remove("turn-thinking");
+      if(data.status==="cannot_answer"||data.status==="needs_clarification"){
+        ui.message.textContent=data.status==="needs_clarification"?"需要补充信息":"当前数据或工具的限制";ui.answer.textContent=data.message;ui.answer.hidden=false;return;
       }
-    });
-    const fieldNames = {
-      title: "岗位名称", normalized_title: "标准岗位名称", company_name: "公司名称",
-      country: "国家（原始值）", country_clean: "国家", count: "记录数",
-      skills_required: "技能要求", industry: "行业", function: "职能",
-      occupational_category: "职业类别", employment_type: "雇佣类型",
-      work_model: "工作方式", schedule: "工作时间", shift: "班次",
-      experience_level: "经验级别", job_level_normalized: "标准岗位级别",
-      years_experience_numeric: "工作年限", education_level: "学历要求",
-      minimum_qualifications: "最低任职要求", preferred_qualifications: "优先条件",
-      responsibilities: "岗位职责", certifications: "证书要求", languages_required: "语言要求",
-      salary_min: "薪资下限", salary_max: "薪资上限", salary_currency: "薪资币种",
-      salary_rate_unit: "薪资周期", salary_type: "薪资类型", pay_frequency: "发薪频率",
-      bonus: "奖金", equity: "股权", on_target_earnings: "目标总收入", benefits: "福利",
-      city: "城市", location_resolved: "标准工作地点", locations: "工作地点",
-      remote_eligibility_regions: "远程工作适用地区", latitude: "纬度", longitude: "经度",
-      visa_sponsorship_available: "是否提供签证支持", work_authorization_requirements: "工作许可要求",
-      security_clearance: "安全审查要求", relocation_assistance: "搬迁支持",
-      travel_required: "是否需要出差", travel_percentage: "出差比例", date_posted: "发布日期",
-      closing_date: "截止日期", job_description: "岗位描述", ats_name: "招聘系统",
-      column: "统计字段", mean: "平均值", median: "中位数", min: "最小值", max: "最大值"
-    };
-    const countryNames = {
-      "united states": "美国", "united states of america": "美国", usa: "美国", us: "美国",
-      "united kingdom": "英国", uk: "英国", "u.k.": "英国", gb: "英国",
-      india: "印度", france: "法国", germany: "德国", canada: "加拿大",
-      china: "中国", japan: "日本", australia: "澳大利亚", singapore: "新加坡",
-      netherlands: "荷兰", ireland: "爱尔兰", spain: "西班牙", italy: "意大利",
-      switzerland: "瑞士", sweden: "瑞典", poland: "波兰", brazil: "巴西",
-      mexico: "墨西哥", "south korea": "韩国", "new zealand": "新西兰",
-      "united arab emirates": "阿联酋", "south africa": "南非", israel: "以色列"
-    };
-    const jobNames = {
-      "data analyst": "数据分析师", "data scientist": "数据科学家",
-      "data engineer": "数据工程师", "software engineer": "软件工程师"
-    };
-    const regionNames = typeof Intl.DisplayNames === "function"
-      ? new Intl.DisplayNames(["zh-CN"], {type: "region"}) : null;
-
-    function fieldName(column) {
-      return Object.hasOwn(fieldNames, column) ? fieldNames[column] : column;
+      ui.message.textContent=data.historyPreview?"历史分析 · 数据为当时的查询结果":"分析完成";
+      ui.answer.textContent=data.answer||"查询已完成，请查看数据依据。";ui.answer.hidden=false;
+      showEvidence(data,ui);
+      if(data.plan)renderPlan(data.plan,ui);
+      const last=(data.steps||[]).at(-1);
+      if(last){renderResult(last.result,ui);renderChart(last,ui);ui.dataDetails.hidden=false}
+      if(data.historyPreview){ui.exportButton.hidden=true;ui.message.textContent+=" · 原始明细未完整保存，可重新提问获取"}
     }
-
-    function countryName(value) {
-      const text = String(value).trim();
-      const key = text.toLowerCase();
-      if (Object.hasOwn(countryNames, key)) return countryNames[key];
-      if (regionNames && /^[a-z]{2}$/i.test(text)) return regionNames.of(text.toUpperCase());
-      return text;
+    function openChat(id){
+      if(busy)return;activeId=id;conversation.replaceChildren();
+      const chat=activeChat();hero.hidden=Boolean(chat?.turns.length);chatHeading.hidden=!chat?.turns.length;landing.hidden=true;
+      if(chat)for(const turn of chat.turns){const {ui}=createTurn(turn.question);if(turn.data)showResult(turn.data,ui);else{ui.message.classList.remove("turn-thinking");ui.message.textContent=turn.error||"上次请求中断，请重新提问。"}}
+      renderHistory();questionInput.focus();
     }
-
-    function renderPlan(plan) {
-      const lines = (plan.tool_calls || []).map((call, index) => {
-        const args = call.arguments || {};
-        const column = fieldName(args.column || "");
-        let description;
-        if (call.name === "filter_rows") {
-          description = `筛选「${column}」中包含「${displayValue(args.keyword, args.column)}」的记录。`;
-        } else if (call.name === "count_values") {
-          description = `按「${column}」统计记录数，忽略缺失值，按数量从高到低取前 ${args.top_n ?? 10} 项。`;
-        } else if (call.name === "summarize_numeric") {
-          description = `计算「${column}」的有效数量、平均值、中位数、最小值和最大值。`;
-        } else {
-          description = "执行数据处理步骤。";
-        }
-        return `第 ${index + 1} 步：${description}`;
-      });
-      planBox.textContent = lines.join("\n\n");
-    }
-
-    function renderAnswer(step) {
-      answerBox.hidden = true;
-      answerBox.textContent = "";
-      const rows = step.result;
-      const column = step.arguments?.column;
-      if (step.tool !== "count_values" || !column || !Array.isArray(rows) ||
-          !rows.length || !rows.every(row => row && Number.isFinite(row.count))) return;
-      const highest = Math.max(...rows.map(row => row.count));
-      const leaders = rows.filter(row => row.count === highest)
-        .map(row => displayValue(row[column], column));
-      answerBox.textContent = `本次返回 ${rows.length} 项统计结果。其中，${leaders.join("、")}` +
-        `${leaders.length > 1 ? "并列" : ""}最多，为 ${highest.toLocaleString("zh-CN")} 条记录。`;
-      answerBox.hidden = false;
-    }
-
-    function clearChart() {
-      chartBox.replaceChildren();
-      chartBox.hidden = true;
-    }
-
-    function renderChart(step) {
-      clearChart();
-      const rows = step.result;
-      const column = step.arguments?.column;
-      if (step.tool !== "count_values" || !column ||
-          !Array.isArray(rows) || rows.length === 0) return;
-      if (!rows.every(row => row && Object.hasOwn(row, column) &&
-          Number.isFinite(row.count) && row.count >= 0)) return;
-
-      const shown = [...rows].sort((a, b) => b.count - a.count).slice(0, 20);
-      const maximum = shown[0].count;
-      const heading = document.createElement("h2");
-      heading.textContent = "岗位记录数对比";
-      const note = document.createElement("p");
-      note.className = "chart-note";
-      note.textContent = "条形从 0 开始，长度表示记录数。" +
-        (rows.length > 20 ? "图表仅显示前 20 项，完整结果见下方表格。" : "");
-      chartBox.append(heading, note);
-
-      for (const row of shown) {
-        const item = document.createElement("div");
-        item.className = "chart-row";
-        const label = document.createElement("span");
-        label.className = "chart-label";
-        label.textContent = displayValue(row[column], column);
-        const track = document.createElement("div");
-        track.className = "chart-track";
-        track.setAttribute("aria-hidden", "true");
-        const bar = document.createElement("div");
-        bar.className = "chart-bar";
-        bar.style.width = `${maximum > 0 ? row.count / maximum * 100 : 0}%`;
-        track.appendChild(bar);
-        const count = document.createElement("span");
-        count.className = "chart-count";
-        count.textContent = row.count.toLocaleString("zh-CN");
-        item.append(label, track, count);
-        chartBox.appendChild(item);
-      }
-      chartBox.hidden = false;
-    }
-
-    function displayValue(value, column = "") {
-      if (value === null || value === undefined) return "—";
-      if (column === "country" || column === "country_clean") return countryName(value);
-      if (column === "column") return fieldName(value);
-      if (typeof value === "boolean") return value ? "是" : "否";
-      if ((column === "title" || column === "normalized_title") && typeof value === "string") {
-        return value.replace(/Data Analyst|Data Scientist|Data Engineer|Software Engineer/gi,
-          match => jobNames[match.toLowerCase()]);
-      }
-      return typeof value === "object"
-        ? JSON.stringify(value)
-        : String(value);
-    }
-
-    function renderResult(result) {
-      resultBox.replaceChildren();
-      resetExport();
-
-      if (!Array.isArray(result)) {
-        const pre = document.createElement("pre");
-        pre.textContent = result && typeof result === "object"
-          ? Object.entries(result).map(([key, value]) => `${fieldName(key)}：${displayValue(value, key)}`).join("\n")
-          : displayValue(result);
-        resultBox.appendChild(pre);
-        prepareExport(result);
-        return;
-      }
-
-      if (result.length === 0) {
-        resultBox.textContent = "没有符合条件的记录。";
-        return;
-      }
-
-      const columns = [...new Set(
-        result.flatMap(row => Object.keys(row))
-      )];
-      const table = document.createElement("table");
-      const header = table.createTHead().insertRow();
-
-      for (const column of columns) {
-        const cell = document.createElement("th");
-        cell.scope = "col";
-        cell.textContent = fieldName(column);
-        header.appendChild(cell);
-      }
-
-      const body = table.createTBody();
-      for (const row of result) {
-        const tableRow = body.insertRow();
-        for (const column of columns) {
-          tableRow.insertCell().textContent = displayValue(row[column], column);
-        }
-      }
-
-      resultBox.appendChild(table);
-      prepareExport(result);
-    }
-
-    form.addEventListener("submit", async (event) => {
+    function newChat(){if(busy)return;openChat(null);questionInput.value="";saveHistory();window.scrollTo({top:0,behavior:"smooth"})}
+    document.getElementById("newChatButton").addEventListener("click",newChat);
+    document.getElementById("sideNewChat").addEventListener("click",newChat);
+    function setBusy(value){busy=value;sendButton.disabled=value;document.getElementById("newChatButton").disabled=value;document.getElementById("sideNewChat").disabled=value;document.querySelectorAll(".quick-card").forEach(b=>b.disabled=value);renderHistory()}
+    let composing=false,compositionFinishedAt=-Infinity;
+    questionInput.addEventListener("compositionstart",()=>{composing=true});
+    questionInput.addEventListener("compositionend",()=>{composing=false;compositionFinishedAt=performance.now()});
+    questionInput.addEventListener("keydown",event=>{
+      if(event.key!=="Enter")return;
+      if(event.isComposing||composing||event.keyCode===229)return;
       event.preventDefault();
-
-      const question = questionInput.value.trim();
-      resetExport();
-      clearChart();
-      answerBox.textContent = "";
-      answerBox.hidden = true;
-      resultBox.replaceChildren();
-      planBox.textContent = "";
-      planDetails.hidden = true;
-
-      if (!question) {
-        message.textContent = "请先输入问题。";
-        return;
-      }
-
-      button.disabled = true;
-      message.textContent = "正在生成计划并分析，请稍候……";
-
-      try {
-        const response = await fetch("/agent/ask", {
-          method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({question})
-        });
-
-        const text = await response.text();
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch {
-          throw new Error(`服务器返回了非 JSON 响应（HTTP ${response.status}）`);
-        }
-
-        if (!response.ok) {
-          throw new Error(
-            typeof data.detail === "string"
-              ? data.detail
-              : JSON.stringify(data.detail || data)
-          );
-        }
-if (
-  data.status === "cannot_answer" ||
-  data.status === "needs_clarification"
-) {
-  message.textContent =
-    data.status === "needs_clarification"
-      ? "需要补充信息"
-      : "当前无法完成此分析";
-
-  answerBox.textContent = data.message;
-  answerBox.hidden = false;
-  return;
-}
-        if (!Array.isArray(data.steps) || data.steps.length === 0) {
-          throw new Error("服务器没有返回执行步骤。");
-        }
-
-        renderPlan(data.plan);
-        planDetails.hidden = false;
-
-        const lastStep = data.steps[data.steps.length - 1];
-        renderResult(lastStep.result);
-        renderChart(lastStep);
-        renderAnswer(lastStep);
-        message.textContent = `分析完成，共执行 ${data.steps.length} 个步骤。`;
-      } catch (error) {
-        resetExport();
-        message.textContent = `分析失败：${error.message}`;
-      } finally {
-        button.disabled = false;
-      }
+      if(event.repeat||busy||performance.now()-compositionFinishedAt<80)return;
+      form.requestSubmit();
     });
+    form.addEventListener("submit",async event=>{
+      event.preventDefault();if(busy||composing||performance.now()-compositionFinishedAt<80)return;const question=questionInput.value.trim();if(!question){questionInput.focus();return}
+      let chat=activeChat();if(!chat){chat={id:crypto.randomUUID(),title:question.slice(0,30),turns:[]};chats.unshift(chat);chats=chats.slice(0,20);activeId=chat.id}
+      const history=chat.turns.filter(t=>t.data).slice(-6).map(t=>({question:t.question.slice(0,4000),answer:(t.data.answer||t.data.message||"查询完成").slice(0,4000)}));
+      const turn={question};chat.turns.push(turn);saveHistory();beginChat();const {ui,assistantRow}=createTurn(question);questionInput.value="";setBusy(true);
+      assistantRow.scrollIntoView({behavior:"smooth",block:"start"});let complete=false;
+      function receive(packet){
+        if(packet.type==="progress")ui.message.textContent=packet.data;
+        else if(packet.type==="delta"){ui.message.textContent="正在生成回答…";ui.answer.hidden=false;ui.answer.textContent+=packet.data}
+        else if(packet.type==="result"){turn.data=packet.data;showResult(packet.data,ui);complete=true}
+        else if(packet.type==="error")throw new Error(packet.data);
+      }
+      try{
+        const response=await fetch("/agent/ask/stream",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question,history})});
+        if(!response.ok)throw new Error(`请求失败（HTTP ${response.status}）`);
+        const reader=response.body.getReader(),decoder=new TextDecoder();let buffer="";
+        try{while(true){const {done,value}=await reader.read();buffer+=decoder.decode(value||new Uint8Array(),{stream:!done});let split;while((split=buffer.indexOf("\n"))>=0){const line=buffer.slice(0,split);buffer=buffer.slice(split+1);if(line.trim())receive(JSON.parse(line))}if(done)break}if(buffer.trim())receive(JSON.parse(buffer))}finally{reader.releaseLock()}
+        if(!complete)throw new Error("连接中断，回答未完成，请重试。");
+      }catch(error){turn.error=`分析未完成：${error.message}`;ui.message.classList.remove("turn-thinking");ui.message.textContent=turn.error;ui.message.style.color="#a33b35"}
+      finally{setBusy(false);saveHistory();questionInput.focus()}
+    });
+    openChat(activeId);
+
   </script>
 </body>
 </html>

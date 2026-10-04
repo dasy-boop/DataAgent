@@ -1,11 +1,15 @@
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
+import json
+import logging
 
 import pandas as pd
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from agent.llm_client import LLMClient
+from agent.answers import build_evidence, fallback_answer
 from agent.runtime import run_plan
 from agent.schemas import AgentPlan
 from backend.country_cleaning import normalize_country
@@ -25,8 +29,22 @@ class ExecuteRequest(BaseModel):
     plan: AgentPlan
 
 
+class HistoryTurn(BaseModel):
+    question: str = Field(min_length=1, max_length=4000)
+    answer: str = Field(min_length=1, max_length=4000)
+
+
 class PlanRequest(BaseModel):
-    question: str = Field(min_length=1)
+    question: str = Field(min_length=1, max_length=4000)
+    history: list[HistoryTurn] = Field(default_factory=list, max_length=6)
+
+
+def answer_question(request):
+    if not request.history:
+        return request.question
+    return json.dumps({"current_question": request.question,
+                       "conversation_context": [m.model_dump() for m in request.history]},
+                      ensure_ascii=False)
 
 
 def load_agent_data() -> pd.DataFrame:
@@ -181,6 +199,7 @@ def create_agent_plan(request: PlanRequest):
             question=request.question,
             columns=list(df.columns),
             tool_descriptions=tool_descriptions,
+            **({"history": [m.model_dump() for m in request.history]} if request.history else {}),
         )
     except ValueError as exc:
         raise HTTPException(
@@ -201,7 +220,64 @@ def ask_agent(request: PlanRequest):
         ExecuteRequest(plan=plan)
     )
 
+    if execution["status"] == "completed":
+        steps = execution["steps"]
+        execution["answer"] = fallback_answer(steps)
+        execution["answer_source"] = "fallback"
+        if steps[-1]["result"] != []:
+            try:
+                execution["answer"] = LLMClient().create_answer(
+                    answer_question(request), build_evidence(steps)
+                )
+                execution["answer_source"] = "model"
+            except Exception:
+                # Successful data results remain available if explanation fails.
+                pass
+
     return {
         **execution,
         "plan": plan.model_dump(),
+        "evidence": build_evidence(execution["steps"]),
     }
+
+
+@router.post("/ask/stream")
+def ask_agent_stream(request: PlanRequest):
+    """Stream real progress and model tokens; retain structured data on failure."""
+    def event(kind, data):
+        return json.dumps({"type": kind, "data": data}, ensure_ascii=False) + "\n"
+
+    def generate():
+        try:
+            yield event("progress", "正在结合上下文理解问题…" if request.history else "正在理解问题…")
+            plan = AgentPlan.model_validate(create_agent_plan(request))
+            yield event("progress", "正在查询招聘数据…")
+            execution = execute_agent(ExecuteRequest(plan=plan))
+            execution["plan"] = plan.model_dump()
+            evidence = build_evidence(execution["steps"])
+            execution["evidence"] = evidence
+            if execution["status"] != "completed":
+                yield event("result", execution)
+                return
+            yield event("progress", "查询完成，正在整理分析…")
+            answer = fallback_answer(execution["steps"])
+            source = "fallback"
+            if execution["steps"][-1]["result"] != []:
+                try:
+                    chunks = []
+                    for chunk in LLMClient().stream_answer(answer_question(request), evidence):
+                        chunks.append(chunk)
+                        yield event("delta", chunk)
+                    if not chunks or not "".join(chunks).strip():
+                        raise ValueError("Empty answer")
+                    answer, source = "".join(chunks), "model"
+                except Exception:
+                    logging.getLogger(__name__).warning("Answer stream failed; returning data fallback")
+            execution.update(answer=answer, answer_source=source)
+            yield event("result", execution)
+        except Exception as exc:
+            message = exc.detail if isinstance(exc, HTTPException) else "请求未完成，请稍后重试。"
+            yield event("error", str(message))
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
