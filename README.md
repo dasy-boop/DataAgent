@@ -4,6 +4,12 @@ DataAgent 是一个可在浏览器中演示的自然语言数据分析项目。�
 
 当前版本使用一份固定的招聘岗位 Parquet 数据集（112,816 条记录）。**分析工具由代码定义，问题不是预置问答；评测题只是回归测试，并不限制用户提问。** 项目目前没有实现任意 CSV/Excel 上传、MySQL 查询或模型生成 SQL；这些属于后续扩展。
 
+## 页面示例
+
+![DataAgent 两类岗位技能对比的实际查询截图](docs/screenshots/skill-comparison.png)
+
+图中比较 Data Analyst 与 Software Engineer 岗位的常见技能。每组的占比都以该组技能可解析的岗位记录数为分母；截图只展示一次查询的部分页面。[查看两组的完整技能明细截图](docs/screenshots/skill-comparison-details.png)。
+
 ## 功能与边界
 
 - 自然语言筛选岗位，统计国家、公司和岗位名称；按岗位统计技能频次，或独立比较两类岗位的技能。
@@ -28,6 +34,10 @@ flowchart LR
 ```
 
 模型负责选择工具和解释结果；岗位数量、技能频次与图表数值来自工具执行，不由模型直接编造。工具清单和参数校验位于 `tools/`，Agent 规划与回答位于 `agent/`。
+
+## 数据来源
+
+项目使用 [NextGig-Rocks 的 Global Job Postings Multi-ATS Dataset](https://huggingface.co/datasets/NextGig-Rocks/global-job-postings-multi-ats) 中的 `nextgig_jobs_2026-06.parquet`。数据由 NextGig 提供，按 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 授权；仓库保留原始 Parquet 快照，运行时对国家别名和技能文本进行清洗统计。该数据是 2026 年 6 月的历史快照，不代表实时招聘信息；来源页面也说明部分字段稀疏，岗位描述是模型生成的摘要，可能有误。DataAgent 是独立学习项目，来源方并未为本项目背书。
 
 ## 本地启动
 
