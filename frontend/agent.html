@@ -130,7 +130,7 @@
       const userRow=make("div","chat-user-row"),bubble=make("div","chat-user-bubble",question);userRow.append(bubble);
       const assistantRow=make("article","chat-assistant-row"),mark=createAssistantAvatar(),content=make("div","assistant-content");
       const message=make("p","turn-message turn-thinking","正在生成计划并分析，请稍候…"),answer=make("div","turn-answer");answer.hidden=true;
-      const chart=make("section","turn-chart");chart.hidden=true;chart.setAttribute("aria-label","岗位记录数条形图");
+      const chart=make("section","turn-chart");chart.hidden=true;chart.setAttribute("aria-label","分析结果条形图");
       const exportButton=make("button","turn-export","导出 CSV");exportButton.type="button";exportButton.hidden=true;exportButton.disabled=true;
       const result=make("div","turn-result");const planDetails=make("details","turn-plan"),summary=make("summary","","查看分析计划"),plan=make("pre");planDetails.append(summary,plan);planDetails.hidden=true;
       const evidence=make("section","turn-evidence");evidence.hidden=true;
@@ -145,10 +145,35 @@
     function csvCell(value,column){let text=value===null||value===undefined?"":displayValue(value,column);if(typeof value!=="number"&&(/^[\s\uFEFF]*[=+@-]/.test(text)||/^[\t\r\n]/.test(text)))text="'"+text;return '"'+text.replace(/"/g,'""')+'"'}
     function buildCsv(rows){const columns=[...new Set(rows.flatMap(row=>Object.keys(row)))],lines=[columns.map(col=>csvCell(fieldName(col),"")).join(",")];for(const row of rows)lines.push(columns.map(col=>csvCell(row[col],col)).join(","));return "\uFEFF"+lines.join("\r\n")+"\r\n"}
     function downloadCsv(rows){if(!rows||!rows.length)return;const blob=new Blob([buildCsv(rows)],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),link=document.createElement("a"),now=new Date();const stamp=[now.getFullYear(),now.getMonth()+1,now.getDate(),now.getHours(),now.getMinutes(),now.getSeconds()].map(n=>String(n).padStart(2,"0")).join("");link.href=url;link.download=`分析结果_${stamp}.csv`;document.body.append(link);try{link.click()}finally{link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}}
-    function renderPlan(plan,ui){const lines=(plan.tool_calls||[]).map((call,index)=>{const args=call.arguments||{},column=fieldName(args.column||"");let desc;if(call.name==="filter_rows")desc=`筛选「${column}」中包含「${displayValue(args.keyword,args.column)}」的记录。`;else if(call.name==="count_values")desc=`按「${column}」统计记录数，忽略缺失值，按数量从高到低取前 ${args.top_n??10} 项。`;else if(call.name==="summarize_numeric")desc=`计算「${column}」的有效数量、平均值、中位数、最小值和最大值。`;else desc="执行数据处理步骤。";return `第 ${index+1} 步：${desc}`});ui.plan.textContent=lines.join("\n\n");ui.planDetails.hidden=false}
+    function renderPlan(plan,ui){const lines=(plan.tool_calls||[]).map((call,index)=>{const args=call.arguments||{},column=fieldName(args.column||"");let desc;if(call.name==="filter_rows")desc=`筛选「${column}」中包含「${displayValue(args.keyword,args.column)}」的记录。`;else if(call.name==="count_values")desc=`按「${column}」统计记录数，忽略缺失值，按数量从高到低取前 ${args.top_n??10} 项。`;else if(call.name==="count_skills")desc=`解析当前岗位的技能列表，统计各技能涉及的岗位记录数，取前 ${args.top_n??10} 项。`;else if(call.name==="summarize_numeric")desc=`计算「${column}」的有效数量、平均值、中位数、最小值和最大值。`;else desc="执行数据处理步骤。";return `第 ${index+1} 步：${desc}`});ui.plan.textContent=lines.join("\n\n");ui.planDetails.hidden=false}
     function renderAnswer(step,ui){const rows=step.result,column=step.arguments?.column;if(step.tool!=="count_values"||!column||!Array.isArray(rows)||!rows.length||!rows.every(row=>row&&Number.isFinite(row.count)))return;const highest=Math.max(...rows.map(row=>row.count)),leaders=rows.filter(row=>row.count===highest).map(row=>displayValue(row[column],column));ui.answer.textContent=`本次返回 ${rows.length} 项统计结果。其中，${leaders.join("、")}${leaders.length>1?"并列":""}最多，为 ${highest.toLocaleString("zh-CN")} 条记录。`;ui.answer.hidden=false}
-    function renderChart(step,ui){const rows=step.result,column=step.arguments?.column;if(step.tool!=="count_values"||!column||!Array.isArray(rows)||!rows.length||!rows.every(row=>row&&Object.hasOwn(row,column)&&Number.isFinite(row.count)&&row.count>=0))return;const shown=[...rows].sort((a,b)=>b.count-a.count).slice(0,20),maximum=shown[0].count;ui.chart.append(make("h2","","岗位记录数对比"),make("p","chart-note","条形从 0 开始，长度表示记录数。"+(rows.length>20?"图表仅显示前 20 项，完整结果可导出 CSV。":"")));for(const row of shown){const item=make("div","chart-row"),label=make("span","chart-label",displayValue(row[column],column)),track=make("div","chart-track"),bar=make("div","chart-bar");track.setAttribute("aria-hidden","true");bar.style.width=`${maximum>0?row.count/maximum*100:0}%`;track.append(bar);item.append(label,track,make("span","chart-count",row.count.toLocaleString("zh-CN")));ui.chart.append(item)}ui.chart.hidden=false}
-    function renderResult(value,ui){if(!Array.isArray(value)){const pre=make("pre");pre.textContent=value&&typeof value==="object"?Object.entries(value).map(([key,item])=>`${fieldName(key)}：${displayValue(item,key)}`).join("\n"):displayValue(value);ui.result.append(pre);prepareExport(value,ui);return}if(!value.length){ui.result.textContent="没有符合条件的记录。";return}const columns=[...new Set(value.flatMap(row=>Object.keys(row)))],table=document.createElement("table"),head=table.createTHead().insertRow();for(const column of columns){const cell=make("th","",fieldName(column));cell.scope="col";head.append(cell)}const body=table.createTBody(),visible=value.slice(0,200);for(const row of visible){const tr=body.insertRow();for(const column of columns)tr.insertCell().textContent=displayValue(row[column],column)}ui.result.append(table);if(value.length>visible.length)ui.result.append(make("p","turn-message",`结果共 ${value.length.toLocaleString("zh-CN")} 条，页面展示前 200 条；CSV 可导出完整结果。`));prepareExport(value,ui)}
+    function renderChart(step,ui){
+      const skills=step.tool==="count_skills";
+      const rows=skills?step.result?.skills:step.result;
+      const column=skills?"skill":step.arguments?.column;
+      const countKey=skills?"岗位记录数":"count";
+      if(!["count_values","count_skills"].includes(step.tool)||!column||!Array.isArray(rows)||!rows.length||!rows.every(row=>row&&Object.hasOwn(row,column)&&Number.isFinite(row[countKey])&&row[countKey]>=0))return;
+      const limit=skills?10:20,shown=[...rows].sort((a,b)=>b[countKey]-a[countKey]).slice(0,limit),maximum=shown[0][countKey];
+      const note=skills
+        ?`匹配 ${step.result.matched_records.toLocaleString("zh-CN")} 条岗位，其中 ${step.result.valid_skill_records.toLocaleString("zh-CN")} 条技能可解析；同一岗位的同一技能只计一次，不同技能可出现在同一岗位。`
+        :"条形从 0 开始，长度表示记录数。";
+      ui.chart.append(make("h2","",skills?"常见技能（岗位记录数）":"岗位记录数对比"),make("p","chart-note",note+(rows.length>limit?` 图表展示前 ${limit} 项，完整结果可在下方查看或导出 CSV。`:"")));
+      for(const row of shown){
+        const item=make("div","chart-row"),label=make("span","chart-label",displayValue(row[column],column)),track=make("div","chart-track"),bar=make("div","chart-bar");
+        track.setAttribute("aria-hidden","true");bar.style.width=`${maximum>0?row[countKey]/maximum*100:0}%`;
+        track.append(bar);item.append(label,track,make("span","chart-count",row[countKey].toLocaleString("zh-CN")));ui.chart.append(item);
+      }
+      ui.chart.hidden=false;
+    }
+    function renderResult(value,ui){
+      if(value&&!Array.isArray(value)&&Array.isArray(value.skills)&&Number.isInteger(value.matched_records)&&Number.isInteger(value.valid_skill_records)){
+        ui.result.append(make("p","chart-note",`匹配 ${value.matched_records.toLocaleString("zh-CN")} 条岗位；其中 ${value.valid_skill_records.toLocaleString("zh-CN")} 条的技能字段可解析。`));
+        if(value.skills.length)renderResult(value.skills,ui);
+        else{ui.result.append(make("p","turn-message","当前范围没有可统计的技能。"));resetExport(ui)}
+        return;
+      }
+      if(!Array.isArray(value)){const pre=make("pre");pre.textContent=value&&typeof value==="object"?Object.entries(value).map(([key,item])=>`${fieldName(key)}：${displayValue(item,key)}`).join("\n"):displayValue(value);ui.result.append(pre);prepareExport(value,ui);return}if(!value.length){ui.result.textContent="没有符合条件的记录。";return}const columns=[...new Set(value.flatMap(row=>Object.keys(row)))],table=document.createElement("table"),head=table.createTHead().insertRow();for(const column of columns){const cell=make("th","",fieldName(column));cell.scope="col";head.append(cell)}const body=table.createTBody(),visible=value.slice(0,200);for(const row of visible){const tr=body.insertRow();for(const column of columns)tr.insertCell().textContent=displayValue(row[column],column)}ui.result.append(table);if(value.length>visible.length)ui.result.append(make("p","turn-message",`结果共 ${value.length.toLocaleString("zh-CN")} 条，页面展示前 200 条；CSV 可导出完整结果。`));prepareExport(value,ui)
+    }
     function beginChat(){landing.hidden=true;hero.hidden=true;chatHeading.hidden=false}
     const historyKey="dataagent.conversations.v1";
     let chats=[],activeId=null,busy=false;
