@@ -195,6 +195,28 @@ def create_agent_plan(request: PlanRequest):
             },
         },
         {
+            "name": "compare_skills",
+            "description": (
+                "分别从当前岗位记录中，按同一文本字段的两个关键词独立筛选两组岗位，"
+                "再解析 skills_required 并统计每组的单项技能频次。"
+                "用于比较 Data Analyst 与 Software Engineer 等两类岗位的技能要求。"
+                "每组返回匹配岗位数、技能可解析岗位数和技能排名。"
+                "两组不是连续筛选；只接受 column、keyword_a、keyword_b 和可选 top_n。"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "column": {"type": "string", "description": "用于分组筛选的文本字段，如 title"},
+                    "keyword_a": {"type": "string", "minLength": 1, "description": "第一组筛选关键词"},
+                    "keyword_b": {"type": "string", "minLength": 1, "description": "第二组筛选关键词"},
+                    "top_n": {"type": "integer", "minimum": 1, "maximum": 50,
+                              "default": 10, "description": "每组返回的技能数量"},
+                },
+                "required": ["column", "keyword_a", "keyword_b"],
+                "additionalProperties": False,
+            },
+        },
+        {
             "name": "summarize_numeric",
             "description": (
                 "统计数值字段的有效数量、平均值、中位数、"

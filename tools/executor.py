@@ -15,6 +15,7 @@ def _validate_arguments(
         "filter_rows": {"column", "keyword"},
         "count_values": {"column", "top_n"},
         "count_skills": {"top_n"},
+        "compare_skills": {"column", "keyword_a", "keyword_b", "top_n"},
         "summarize_numeric": {"column"},
     }
 
@@ -38,6 +39,11 @@ def _validate_arguments(
 
     if column not in df.columns:
         raise ToolError(f"字段不存在: {column}")
+
+    if name == "compare_skills":
+        for key in ("keyword_a", "keyword_b"):
+            if not isinstance(arguments.get(key), str) or not arguments[key].strip():
+                raise ToolError(f"compare_skills 的 {key} 不能为空")
 
     if name == "filter_rows":
         keyword = arguments.get("keyword")

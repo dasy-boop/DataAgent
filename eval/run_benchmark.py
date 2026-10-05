@@ -53,12 +53,44 @@ def match_calls(actual, expected):
             if set(args) - {'top_n'} or type(top_n) is not int or not 2 <= top_n <= 50:
                 return False
             continue
+        if want['name'] == 'compare_skills':
+            if set(args) - {'column', 'keyword_a', 'keyword_b', 'top_n'}:
+                return False
+            top_n = args.get('top_n', 10)
+            if type(top_n) is not int or not target.get('top_n', 10) <= top_n <= 50:
+                return False
+            if args.get('column') != target['column']:
+                return False
+            for key in ('keyword_a', 'keyword_b'):
+                if not isinstance(args.get(key), str) or args[key].strip().lower() != target[key].strip().lower():
+                    return False
+            continue
         if args != target:
             return False
     return True
 
 
 def check_result(actual, expected):
+    if expected['kind'] == 'compare_skill_counts':
+        if not isinstance(actual, dict) or actual.get('column') != expected['column']:
+            return False, '技能对比字段不符'
+        groups = actual.get('groups')
+        if not isinstance(groups, list) or len(groups) != len(expected['groups']):
+            return False, '技能对比分组数量不符'
+        for group, baseline in zip(groups, expected['groups']):
+            if (not isinstance(group, dict) or not isinstance(group.get('keyword'), str)
+                    or group['keyword'].strip().lower() != baseline['keyword'].lower()):
+                return False, '技能对比分组名称或顺序不符'
+            passed, message = check_result(group, {**baseline, 'kind': 'skill_counts'})
+            if not passed:
+                return False, f"{baseline['keyword']}：{message}"
+            denominator = group['valid_skill_records']
+            for row in group['skills']:
+                percentage = row.get('占可解析记录比例(%)')
+                expected_percentage = round(row['岗位记录数'] / denominator * 100, 2) if denominator else 0
+                if type(percentage) not in (int, float) or abs(percentage - expected_percentage) > 0.011:
+                    return False, f"{baseline['keyword']}：技能占比口径不符"
+        return True, '两组匹配数、可解析数、技能频次和组内占比正确'
     if expected['kind'] == 'skill_counts':
         if not isinstance(actual, dict):
             return False, '技能统计结果不是对象'
@@ -146,7 +178,10 @@ def evaluate_case(case, base_url, execution_only=False):
             {c: row.get(c) for c in columns if c is not None} if isinstance(row, dict) else row
             for row in actual[:10]
         ] if isinstance(actual, list) else (
-            {**actual, 'skills': actual.get('skills', [])[:10]} if isinstance(actual, dict) else actual
+            {**actual, 'groups': [{**group, 'skills': group.get('skills', [])[:10]}
+                                    for group in actual['groups']]}
+            if isinstance(actual, dict) and isinstance(actual.get('groups'), list)
+            else ({**actual, 'skills': actual.get('skills', [])[:10]} if isinstance(actual, dict) else actual)
         )
         result['passed'] = result['result_passed'] and (execution_only or result['plan_passed'])
     except HTTPError as exc:

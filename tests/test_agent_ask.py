@@ -120,3 +120,45 @@ def test_skill_comparison_exposes_tool_and_counts_filtered_jobs(monkeypatch):
     body = response.json()
     assert [step["tool"] for step in body["steps"]] == ["filter_rows", "count_skills"]
     assert body["answer_source"] == "model"
+
+
+def test_two_job_groups_use_independent_skill_counts(monkeypatch):
+    question = "比较 Data Analyst 和 Software Engineer 的技能要求。"
+    df = pd.DataFrame({
+        "title": ["Data Analyst", "Data Analyst", "Software Engineer", "Software Engineer"],
+        "skills_required": ['["SQL", "Python"]', '["SQL"]',
+                            '["Python", "Java"]', '["Java"]'],
+    })
+
+    class FakeLLMClient:
+        def create_plan(self, question, columns, tool_descriptions):
+            tool = next(tool for tool in tool_descriptions if tool["name"] == "compare_skills")
+            assert tool["parameters"]["required"] == ["column", "keyword_a", "keyword_b"]
+            return AgentPlan.model_validate({
+                "question": question,
+                "reasoning": "对两个岗位组分别筛选和统计技能",
+                "tool_calls": [{"name": "compare_skills", "arguments": {
+                    "column": "title", "keyword_a": "Data Analyst",
+                    "keyword_b": "Software Engineer", "top_n": 2,
+                }}],
+            })
+
+        def create_answer(self, question, evidence):
+            analyst, engineer = evidence[-1]["result"]["groups"]
+            assert analyst["matched_records"] == engineer["matched_records"] == 2
+            assert analyst["skills"][0]["skill"] == "sql"
+            assert analyst["skills"][0]["岗位记录数"] == 2
+            assert engineer["skills"][0]["skill"] == "java"
+            assert engineer["skills"][0]["岗位记录数"] == 2
+            return "两组各有 2 条岗位；分析岗 SQL 最常见，软件工程岗 Java 最常见。"
+
+    monkeypatch.setattr(agent_routes, "load_agent_data", lambda: df.copy())
+    monkeypatch.setattr(agent_routes, "LLMClient", FakeLLMClient)
+
+    with TestClient(app) as client:
+        response = client.post("/agent/ask", json={"question": question})
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert [step["tool"] for step in body["steps"]] == ["compare_skills"]
+    assert body["answer_source"] == "model"

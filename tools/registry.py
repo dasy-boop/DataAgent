@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from .pandas_tools import count_skills, count_values, filter_rows, summarize_numeric
+from .pandas_tools import compare_skills, count_skills, count_values, filter_rows, summarize_numeric
 
 
 @dataclass(frozen=True)
@@ -26,6 +26,11 @@ TOOL_REGISTRY = {
         name="count_skills",
         description="统计当前岗位范围内各项技能的出现次数",
         func=count_skills,
+    ),
+    "compare_skills": ToolSpec(
+        name="compare_skills",
+        description="分别筛选两组岗位并比较各组技能出现次数",
+        func=compare_skills,
     ),
     "summarize_numeric": ToolSpec(
         name="summarize_numeric",

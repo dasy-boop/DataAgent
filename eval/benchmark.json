@@ -140,6 +140,39 @@
       }
     },
     {
+      "id": "analyst_vs_engineer_skills",
+      "question": "比较 Data Analyst 和 Software Engineer 岗位最常见的技能，并说明两组的岗位记录数和技能占比。",
+      "expected_calls": [
+        {
+          "name": "compare_skills",
+          "arguments": {
+            "column": "title",
+            "keyword_a": "Data Analyst",
+            "keyword_b": "Software Engineer",
+            "top_n": 5
+          }
+        }
+      ],
+      "expected_result": {
+        "kind": "compare_skill_counts",
+        "column": "title",
+        "groups": [
+          {
+            "keyword": "Data Analyst",
+            "matched_records": 166,
+            "valid_skill_records": 137,
+            "candidates": {"sql": 104, "python": 59, "data visualization": 50}
+          },
+          {
+            "keyword": "Software Engineer",
+            "matched_records": 1394,
+            "valid_skill_records": 1213,
+            "candidates": {"java": 424, "python": 401, "ci/cd": 387}
+          }
+        ]
+      }
+    },
+    {
       "id": "no_matching_jobs",
       "question": "筛选岗位名称包含原文关键词“评测专用不存在岗位987654321”的记录，再统计合并已知国家别名后岗位记录最多的前五个国家。",
       "expected_calls": [

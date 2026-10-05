@@ -95,3 +95,25 @@ def count_skills(df: pd.DataFrame, top_n: int = 10) -> dict:
         "valid_skill_records": int(valid_count),
         "skills": ranking.reset_index().to_dict(orient="records"),
     }
+def compare_skills(
+    df: pd.DataFrame,
+    column: str,
+    keyword_a: str,
+    keyword_b: str,
+    top_n: int = 10,
+) -> dict:
+    """分别统计两个岗位范围的技能。"""
+    if not isinstance(keyword_a, str) or not keyword_a.strip():
+        raise ToolError("keyword_a 不能为空")
+    if not isinstance(keyword_b, str) or not keyword_b.strip():
+        raise ToolError("keyword_b 不能为空")
+
+    groups = []
+    for keyword in (keyword_a.strip(), keyword_b.strip()):
+        matched = filter_rows(df, column, keyword)
+        groups.append({
+            "keyword": keyword,
+            **count_skills(matched, top_n),
+        })
+
+    return {"column": column, "groups": groups}

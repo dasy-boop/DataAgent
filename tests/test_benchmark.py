@@ -123,3 +123,34 @@ def test_skill_plan_accepts_enough_top_n_but_rejects_too_small_or_extra_argument
     assert runner.match_calls([expected[0], {'name': 'count_skills', 'arguments': {'top_n': 50}}], expected)
     assert not runner.match_calls([expected[0], {'name': 'count_skills', 'arguments': {'top_n': 1}}], expected)
     assert not runner.match_calls([expected[0], {'name': 'count_skills', 'arguments': {'column': 'skills_required'}}], expected)
+
+
+def test_compare_skills_checks_each_group_and_its_own_denominator():
+    expected = {'kind': 'compare_skill_counts', 'column': 'title', 'groups': [
+        {'keyword': 'Data Analyst', 'matched_records': 3, 'valid_skill_records': 2,
+         'candidates': {'sql': 2}},
+        {'keyword': 'Software Engineer', 'matched_records': 4, 'valid_skill_records': 4,
+         'candidates': {'python': 2}},
+    ]}
+    actual = {'column': 'title', 'groups': [
+        {'keyword': 'Data Analyst', 'matched_records': 3, 'valid_skill_records': 2,
+         'skills': [{'skill': 'sql', '岗位记录数': 2, '占可解析记录比例(%)': 100.0}]},
+        {'keyword': 'Software Engineer', 'matched_records': 4, 'valid_skill_records': 4,
+         'skills': [{'skill': 'python', '岗位记录数': 2, '占可解析记录比例(%)': 50.0}]},
+    ]}
+    assert runner.check_result(actual, expected)[0]
+    wrong_denominator = {**actual, 'groups': [actual['groups'][0],
+        {**actual['groups'][1], 'skills': [{'skill': 'python', '岗位记录数': 2,
+                                          '占可解析记录比例(%)': 100.0}]}]}
+    assert not runner.check_result(wrong_denominator, expected)[0]
+    assert not runner.check_result({**actual, 'groups': list(reversed(actual['groups']))}, expected)[0]
+
+
+def test_compare_skills_plan_requires_independent_groups():
+    expected = [{'name': 'compare_skills', 'arguments': {'column': 'title',
+        'keyword_a': 'Data Analyst', 'keyword_b': 'Software Engineer', 'top_n': 5}}]
+    assert runner.match_calls(expected, expected)
+    assert runner.match_calls([{'name': 'compare_skills', 'arguments': {'column': 'title',
+        'keyword_a': ' data analyst ', 'keyword_b': 'software engineer'}}], expected)
+    assert not runner.match_calls([{'name': 'compare_skills', 'arguments': {'column': 'title',
+        'keyword_a': 'Software Engineer', 'keyword_b': 'Data Analyst', 'top_n': 5}}], expected)
