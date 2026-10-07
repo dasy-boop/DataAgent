@@ -45,6 +45,16 @@ def match_calls(actual, expected):
                 return False
         if want['name'] == 'filter_rows':
             for values in (args, target):
+                conditions = values.pop('conditions', None)
+                if conditions is not None:
+                    if (not isinstance(conditions, list) or len(conditions) != 1
+                            or not isinstance(conditions[0], dict)
+                            or set(conditions[0]) != {'column', 'operator', 'value'}
+                            or conditions[0]['operator'] != 'contains'
+                            or values):
+                        return False
+                    values['column'] = conditions[0]['column']
+                    values['keyword'] = conditions[0]['value']
                 if isinstance(values.get('keyword'), str):
                     values['keyword'] = values['keyword'].strip().lower()
         if want['name'] == 'count_skills':

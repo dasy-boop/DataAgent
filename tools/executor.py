@@ -12,11 +12,17 @@ def _validate_arguments(
     arguments: dict[str, Any],
 ) -> None:
     allowed_arguments = {
-        "filter_rows": {"column", "keyword"},
+        "filter_rows": {"column", "keyword", "conditions"},
         "count_values": {"column", "top_n"},
         "count_skills": {"top_n"},
-        "compare_skills": {"column", "keyword_a", "keyword_b", "top_n"},
+        "compare_skills": {"column", "keyword_a", "keyword_b", "top_n", "groups", "skill"},
         "summarize_numeric": {"column"},
+        "calculate_proportion": {"column", "value"},
+        "compare_groups": {"group_column", "value_a", "value_b", "metric_column", "top_n"},
+        "summarize_salary": {"currency", "period"},
+        "sample_records": {"limit"},
+        "sample_text": {"column", "limit"},
+        "summarize_dates": {"column", "top_n"},
     }
 
     allowed = allowed_arguments.get(name)
@@ -28,6 +34,29 @@ def _validate_arguments(
         raise ToolError(
             f"工具 {name} 不支持参数: {', '.join(extra)}"
         )
+
+    if name == "filter_rows" and "conditions" in arguments:
+        if "column" in arguments or "keyword" in arguments:
+            raise ToolError("多条件筛选不能混用旧式参数")
+        return
+
+    if name in {"calculate_proportion", "compare_groups", "summarize_salary",
+                "sample_records", "sample_text", "summarize_dates"}:
+        required = {
+            "calculate_proportion": {"column", "value"},
+            "compare_groups": {"group_column", "value_a", "value_b", "metric_column"},
+            "summarize_salary": {"currency", "period"},
+            "sample_records": set(),
+            "sample_text": {"column"},
+            "summarize_dates": set(),
+        }[name]
+        missing = required - set(arguments)
+        if missing:
+            raise ToolError(f"工具 {name} 缺少参数: {', '.join(sorted(missing))}")
+        return
+
+    if name == "compare_skills" and "groups" in arguments:
+        return  # The tool validates nested groups and mutually exclusive legacy arguments.
 
     # The skill tool has a fixed source field and validates top_n itself.
     if name == "count_skills":

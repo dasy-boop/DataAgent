@@ -1,3 +1,4 @@
+import argparse
 import json
 import re
 from datetime import datetime
@@ -7,17 +8,17 @@ from urllib.request import Request, urlopen
 
 
 EVAL_DIR = Path(__file__).resolve().parent
-API_URL = "http://127.0.0.1:8001/agent/ask"
+DEFAULT_API_URL = "http://127.0.0.1:8001/agent/ask"
 
 
-def ask_agent(question):
+def ask_agent(question, api_url=DEFAULT_API_URL):
     body = json.dumps(
         {"question": question},
         ensure_ascii=False,
     ).encode("utf-8")
 
     request = Request(
-        API_URL,
+        api_url,
         data=body,
         headers={"Content-Type": "application/json"},
         method="POST",
@@ -27,7 +28,7 @@ def ask_agent(question):
         return json.load(response)
 
 
-def evaluate_case(case):
+def evaluate_case(case, api_url=DEFAULT_API_URL):
     result = {
         "id": case["id"],
         "question": case["question"],
@@ -37,7 +38,7 @@ def evaluate_case(case):
     }
 
     try:
-        response = ask_agent(case["question"])
+        response = ask_agent(case["question"], api_url)
         plan = response.get("plan")
         message = response.get("message")
 
@@ -82,6 +83,9 @@ def evaluate_case(case):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="验证无法回答与澄清场景")
+    parser.add_argument("--base-url", default="http://127.0.0.1:8001")
+    args = parser.parse_args()
     cases_path = EVAL_DIR / "unanswerable_cases.json"
 
     if not cases_path.is_file():
@@ -113,7 +117,7 @@ def main():
     results = []
 
     for case in cases:
-        result = evaluate_case(case)
+        result = evaluate_case(case, args.base_url.rstrip("/") + "/agent/ask")
         results.append(result)
 
         status = "通过" if result["passed"] else "未通过"

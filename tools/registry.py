@@ -1,7 +1,12 @@
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from .pandas_tools import compare_skills, count_skills, count_values, filter_rows, summarize_numeric
+from .pandas_tools import compare_skills, count_skills
+from .analysis_tools import (
+    calculate_proportion, compare_groups, count_values, filter_rows,
+    sample_records, sample_text, summarize_dates, summarize_numeric,
+    summarize_salary,
+)
 
 
 @dataclass(frozen=True)
@@ -36,6 +41,30 @@ TOOL_REGISTRY = {
         name="summarize_numeric",
         description="统计数值字段的平均值、中位数、最小值和最大值",
         func=summarize_numeric,
+    ),
+    "calculate_proportion": ToolSpec(
+        name="calculate_proportion", description="按可判定记录计算分类比例及分子分母",
+        func=calculate_proportion,
+    ),
+    "compare_groups": ToolSpec(
+        name="compare_groups", description="在相同当前范围内比较两组分类分布",
+        func=compare_groups,
+    ),
+    "summarize_salary": ToolSpec(
+        name="summarize_salary", description="按单一币种及薪资周期统计薪资上下限",
+        func=summarize_salary,
+    ),
+    "sample_records": ToolSpec(
+        name="sample_records", description="返回有限条真实岗位的必要字段",
+        func=sample_records,
+    ),
+    "sample_text": ToolSpec(
+        name="sample_text", description="从长文本字段抽取有限样本供审慎总结",
+        func=sample_text,
+    ),
+    "summarize_dates": ToolSpec(
+        name="summarize_dates", description="按月份汇总已有招聘日期",
+        func=summarize_dates,
     ),
 }
 

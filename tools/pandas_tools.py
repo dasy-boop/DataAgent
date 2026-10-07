@@ -97,23 +97,73 @@ def count_skills(df: pd.DataFrame, top_n: int = 10) -> dict:
     }
 def compare_skills(
     df: pd.DataFrame,
-    column: str,
-    keyword_a: str,
-    keyword_b: str,
+    column: str | None = None,
+    keyword_a: str | None = None,
+    keyword_b: str | None = None,
     top_n: int = 10,
+    groups: list[dict] | None = None,
+    skill: str | None = None,
 ) -> dict:
-    """分别统计两个岗位范围的技能。"""
-    if not isinstance(keyword_a, str) or not keyword_a.strip():
-        raise ToolError("keyword_a 不能为空")
-    if not isinstance(keyword_b, str) or not keyword_b.strip():
-        raise ToolError("keyword_b 不能为空")
+    """Compare independent scopes; retain the original two-keyword API."""
+    from .analysis_tools import filter_rows as filter_conditions
 
-    groups = []
-    for keyword in (keyword_a.strip(), keyword_b.strip()):
-        matched = filter_rows(df, column, keyword)
-        groups.append({
-            "keyword": keyword,
-            **count_skills(matched, top_n),
-        })
+    if skill is not None and (not isinstance(skill, str) or not skill.strip()):
+        raise ToolError("skill 必须是非空技能名称")
+    target = normalize_skills([skill])[0] if skill is not None else None
+    if groups is not None:
+        if any(value is not None for value in (column, keyword_a, keyword_b)):
+            raise ToolError("groups 不能与 column、keyword_a、keyword_b 混用")
+        if not isinstance(groups, list) or len(groups) != 2:
+            raise ToolError("groups 必须包含两个独立比较组")
+        for group in groups:
+            if (not isinstance(group, dict) or set(group) != {"label", "conditions"}
+                    or not isinstance(group["label"], str) or not group["label"].strip()):
+                raise ToolError("每组必须包含非空 label 和 conditions")
+        if groups[0]["label"].strip() == groups[1]["label"].strip():
+            raise ToolError("比较组 label 不能相同")
+        scopes = [(group["label"].strip(), filter_conditions(df, conditions=group["conditions"]))
+                  for group in groups]
+    else:
+        for name, value in (("keyword_a", keyword_a), ("keyword_b", keyword_b)):
+            if not isinstance(value, str) or not value.strip():
+                raise ToolError(f"{name} 不能为空")
+        scopes = [(keyword.strip(), filter_rows(df, column, keyword))
+                  for keyword in (keyword_a, keyword_b)]
 
-    return {"column": column, "groups": groups}
+    results = []
+    for index, (label, matched) in enumerate(scopes):
+        result = {"keyword": label, **count_skills(matched, top_n)}
+        if groups is not None:
+            result["conditions"] = groups[index]["conditions"]
+        if target is not None:
+            # Use the very same parser, normalization, deduplication and percentage
+            # calculation as rankings; lookup is independent of the top_n cutoff.
+            jobs = matched[["skills_required"]].copy()
+            parsed = jobs["skills_required"].apply(parse_skills)
+            jobs["skills_parse_status"] = parsed.apply(lambda item: item[1])
+            jobs["skills_normalized"] = parsed.apply(lambda item: normalize_skills(item[0]))
+            ranking, valid = summarize_skills(jobs, top_n=max(1, int(jobs["skills_normalized"].map(len).sum())))
+            count = int(ranking.loc[target, "岗位记录数"]) if target in ranking.index else 0
+            percentage = (float(ranking.loc[target, "占可解析记录比例(%)"])
+                          if target in ranking.index else (0.0 if valid else None))
+            result["target_skill"] = {"skill": target, "numerator": count,
+                                      "denominator": int(valid), "percentage": percentage}
+            result["skills"] = [{"skill": target, "岗位记录数": count,
+                                 "占可解析记录比例(%)": percentage}]
+        results.append(result)
+
+    output = {"column": column, "groups": results}
+    if groups is not None or target is not None:
+        enough = all(group["valid_skill_records"] > 0 for group in results)
+        output["status"] = "ok" if enough else "insufficient_data"
+        if target is not None:
+            winner = None
+            tied = None
+            if enough:
+                left, right = [group["target_skill"] for group in results]
+                # Compare exact ratios, not rounded display percentages.
+                delta = left["numerator"] * right["denominator"] - right["numerator"] * left["denominator"]
+                tied = delta == 0
+                winner = results[0 if delta > 0 else 1]["keyword"] if delta else None
+            output["comparison"] = {"skill": target, "winner": winner, "tied": tied}
+    return output

@@ -133,7 +133,7 @@ def test_two_job_groups_use_independent_skill_counts(monkeypatch):
     class FakeLLMClient:
         def create_plan(self, question, columns, tool_descriptions):
             tool = next(tool for tool in tool_descriptions if tool["name"] == "compare_skills")
-            assert tool["parameters"]["required"] == ["column", "keyword_a", "keyword_b"]
+            assert {"required": ["column", "keyword_a", "keyword_b"]} in tool["parameters"]["oneOf"]
             return AgentPlan.model_validate({
                 "question": question,
                 "reasoning": "对两个岗位组分别筛选和统计技能",

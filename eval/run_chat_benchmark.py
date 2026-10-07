@@ -52,12 +52,20 @@ def check_turn(index, result, deltas):
         and "".join(deltas) == result.get("answer")
     )
     calls = result.get("plan", {}).get("tool_calls", [])
-    checks["company_scope_kept"] = any(
-        call.get("name") == "filter_rows"
-        and call.get("arguments", {}).get("column") == "company_name"
-        and "western digital" in str(call.get("arguments", {}).get("keyword", "")).lower()
-        for call in calls if isinstance(call, dict)
-    )
+    def company_filter(call):
+        if not isinstance(call, dict) or call.get("name") != "filter_rows":
+            return False
+        arguments = call.get("arguments", {})
+        if arguments.get("column") == "company_name" and "western digital" in str(arguments.get("keyword", "")).lower():
+            return True
+        return any(
+            item.get("column") == "company_name"
+            and item.get("operator") == "contains"
+            and "western digital" in str(item.get("value", "")).lower()
+            for item in arguments.get("conditions", []) if isinstance(item, dict)
+        )
+
+    checks["company_scope_kept"] = any(company_filter(call) for call in calls)
     evidence = result.get("evidence") or []
     company_rows = [item for item in evidence if item.get("tool") == "filter_rows"]
     scoped = company_rows[-1] if company_rows else {}
