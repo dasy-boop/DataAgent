@@ -15,15 +15,13 @@ app.include_router(dataset_router)
 app.include_router(analysis_router)
 app.include_router(agent_router)
 
-FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
-app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 @app.get("/health")
 def health_check():
     return {
         "status": "ok",
         "service": "dataagent",
     }
-# Reload agent routes
-# Reload country_clean support
 
 
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

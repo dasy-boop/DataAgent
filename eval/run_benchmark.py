@@ -27,6 +27,16 @@ def request_json(url, body):
         return json.load(response)
 
 
+def matching_title_condition(conditions, column, keyword):
+    return (isinstance(conditions, list) and len(conditions) == 1
+            and isinstance(conditions[0], dict)
+            and set(conditions[0]) == {'column', 'operator', 'value'}
+            and conditions[0]['column'] == column
+            and conditions[0]['operator'] == 'contains'
+            and isinstance(conditions[0]['value'], str)
+            and conditions[0]['value'].strip().lower() == keyword.strip().lower())
+
+
 def match_calls(actual, expected):
     if not isinstance(actual, list) or len(actual) != len(expected):
         return False
@@ -64,16 +74,24 @@ def match_calls(actual, expected):
                 return False
             continue
         if want['name'] == 'compare_skills':
-            if set(args) - {'column', 'keyword_a', 'keyword_b', 'top_n'}:
-                return False
             top_n = args.get('top_n', 10)
             if type(top_n) is not int or not target.get('top_n', 10) <= top_n <= 50:
                 return False
-            if args.get('column') != target['column']:
-                return False
-            for key in ('keyword_a', 'keyword_b'):
-                if not isinstance(args.get(key), str) or args[key].strip().lower() != target[key].strip().lower():
+            if 'groups' in args:
+                if set(args) - {'groups', 'top_n'} or not isinstance(args['groups'], list) or len(args['groups']) != 2:
                     return False
+                for group, keyword in zip(args['groups'], (target['keyword_a'], target['keyword_b'])):
+                    if (not isinstance(group, dict) or set(group) != {'label', 'conditions'}
+                            or not isinstance(group['label'], str)
+                            or group['label'].strip().lower() != keyword.strip().lower()
+                            or not matching_title_condition(group['conditions'], target['column'], keyword)):
+                        return False
+            else:
+                if set(args) - {'column', 'keyword_a', 'keyword_b', 'top_n'} or args.get('column') != target['column']:
+                    return False
+                for key in ('keyword_a', 'keyword_b'):
+                    if not isinstance(args.get(key), str) or args[key].strip().lower() != target[key].strip().lower():
+                        return False
             continue
         if args != target:
             return False
@@ -82,12 +100,15 @@ def match_calls(actual, expected):
 
 def check_result(actual, expected):
     if expected['kind'] == 'compare_skill_counts':
-        if not isinstance(actual, dict) or actual.get('column') != expected['column']:
+        if not isinstance(actual, dict) or actual.get('column') not in (expected['column'], None):
             return False, '技能对比字段不符'
         groups = actual.get('groups')
         if not isinstance(groups, list) or len(groups) != len(expected['groups']):
             return False, '技能对比分组数量不符'
         for group, baseline in zip(groups, expected['groups']):
+            if actual.get('column') is None and (not isinstance(group, dict) or not matching_title_condition(
+                    group.get('conditions'), expected['column'], baseline['keyword'])):
+                return False, '技能对比分组筛选条件不符'
             if (not isinstance(group, dict) or not isinstance(group.get('keyword'), str)
                     or group['keyword'].strip().lower() != baseline['keyword'].lower()):
                 return False, '技能对比分组名称或顺序不符'

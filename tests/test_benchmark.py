@@ -154,3 +154,39 @@ def test_compare_skills_plan_requires_independent_groups():
         'keyword_a': ' data analyst ', 'keyword_b': 'software engineer'}}], expected)
     assert not runner.match_calls([{'name': 'compare_skills', 'arguments': {'column': 'title',
         'keyword_a': 'Software Engineer', 'keyword_b': 'Data Analyst', 'top_n': 5}}], expected)
+
+
+def test_compare_skills_plan_accepts_equivalent_group_filters_only():
+    expected = [{'name': 'compare_skills', 'arguments': {'column': 'title',
+        'keyword_a': 'Data Analyst', 'keyword_b': 'Software Engineer', 'top_n': 5}}]
+    groups = [{'label': keyword, 'conditions': [
+        {'column': 'title', 'operator': 'contains', 'value': keyword}]}
+        for keyword in ('Data Analyst', 'Software Engineer')]
+    actual = [{'name': 'compare_skills', 'arguments': {'groups': groups, 'top_n': 10}}]
+    assert runner.match_calls(actual, expected)
+    bad_groups = [groups[0], {**groups[1], 'conditions': [
+        {'column': 'country_clean', 'operator': 'contains', 'value': 'Software Engineer'}]}]
+    assert not runner.match_calls([{'name': 'compare_skills', 'arguments': {'groups': bad_groups}}], expected)
+    assert not runner.match_calls([{'name': 'compare_skills', 'arguments': {
+        'groups': groups, 'column': 'title'}}], expected)
+
+
+def test_compare_skills_result_checks_group_filters_and_counts():
+    expected = {'kind': 'compare_skill_counts', 'column': 'title', 'groups': [
+        {'keyword': 'Data Analyst', 'matched_records': 3, 'valid_skill_records': 2,
+         'candidates': {'sql': 2}},
+        {'keyword': 'Software Engineer', 'matched_records': 4, 'valid_skill_records': 4,
+         'candidates': {'python': 2}}]}
+    groups = [
+        {'keyword': 'Data Analyst', 'matched_records': 3, 'valid_skill_records': 2,
+         'conditions': [{'column': 'title', 'operator': 'contains', 'value': 'Data Analyst'}],
+         'skills': [{'skill': 'sql', '岗位记录数': 2, '占可解析记录比例(%)': 100.0}]},
+        {'keyword': 'Software Engineer', 'matched_records': 4, 'valid_skill_records': 4,
+         'conditions': [{'column': 'title', 'operator': 'contains', 'value': 'Software Engineer'}],
+         'skills': [{'skill': 'python', '岗位记录数': 2, '占可解析记录比例(%)': 50.0}]}]
+    assert runner.check_result({'column': None, 'groups': groups}, expected)[0]
+    bad_filter = [{**groups[0], 'conditions': [{'column': 'country_clean',
+        'operator': 'contains', 'value': 'Data Analyst'}]}, groups[1]]
+    assert not runner.check_result({'column': None, 'groups': bad_filter}, expected)[0]
+    bad_count = [groups[0], {**groups[1], 'matched_records': 5}]
+    assert not runner.check_result({'column': None, 'groups': bad_count}, expected)[0]
